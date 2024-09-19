@@ -2,6 +2,8 @@
 
 This is a 3D Tetris game built using Three.js and Cannon.js. The project uses Webpack for module bundling and development server.
 
+[Click here for the current demo](https://mayankles.github.io/3DTetris/)!
+
 ## Features
 
 - 3D rendering using Three.js

@@ -26,7 +26,7 @@ controls.target.set(0, 0, 0); // Set the target to the center of the floor
 
 // Set the camera position to be 6 feet above the ground
 camera.position.set(0, 1.83, 0); // Position the camera 6 feet above the center
-camera.lookAt(0, 0, 1); // Make the camera look forward initially
+camera.lookAt(0, 0, -10); // Make the camera look slightly downward
 
 // Add ambient light
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
@@ -39,7 +39,7 @@ scene.add(directionalLight);
 
 // Load texture for the floor
 const textureLoader = new THREE.TextureLoader();
-const floorTexture = textureLoader.load('assets/images/wood-grain.jpg');
+const floorTexture = textureLoader.load('assets/images/floor.jpg');
 floorTexture.wrapS = THREE.RepeatWrapping;
 floorTexture.wrapT = THREE.RepeatWrapping;
 floorTexture.repeat.set(3, 3); // Adjust texture repeat to fit the 30 ft square
