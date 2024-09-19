@@ -20,12 +20,13 @@ document.body.appendChild(renderer.domElement);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true; // Enable damping (inertia)
 controls.dampingFactor = 0.25;
-controls.enableZoom = true;
+controls.enableZoom = false; // Disable zoom
+controls.enablePan = false; // Disable panning
+controls.target.set(0, 0, 0); // Set the target to the center of the floor
 
-// Set the camera position
-camera.position.z = 30;
-camera.position.y = 20;
-camera.lookAt(0, 0, 0); // Make the camera look at the center
+// Set the camera position to be 6 feet above the ground
+camera.position.set(0, 1.83, 0); // Position the camera 6 feet above the center
+camera.lookAt(0, 0, 1); // Make the camera look forward initially
 
 // Add ambient light
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
@@ -41,10 +42,10 @@ const textureLoader = new THREE.TextureLoader();
 const floorTexture = textureLoader.load('assets/images/wood-grain.jpg');
 floorTexture.wrapS = THREE.RepeatWrapping;
 floorTexture.wrapT = THREE.RepeatWrapping;
-floorTexture.repeat.set(10, 10);
+floorTexture.repeat.set(3, 3); // Adjust texture repeat to fit the 30 ft square
 
 // Create a ground plane with texture
-const groundGeometry = new THREE.PlaneGeometry(50, 50);
+const groundGeometry = new THREE.PlaneGeometry(9.14, 9.14); // 30 ft square
 const groundMaterial = new THREE.MeshStandardMaterial({ map: floorTexture });
 const groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
 groundMesh.rotation.x = -Math.PI / 2; // Rotate to be horizontal
@@ -65,18 +66,36 @@ world.addBody(groundBody);
 
 // Function to add a new cube to the scene and physics world
 function addCube() {
-    const geometry = new THREE.BoxGeometry(1, 1, 1);
+    const geometry = new THREE.BoxGeometry(0.25, 0.25, 0.25); // Smaller cube size
     const material = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
     const cube = new THREE.Mesh(geometry, material);
     scene.add(cube);
 
-    const cubeShape = new CANNON.Box(new CANNON.Vec3(0.5, 0.5, 0.5));
+    const cubeShape = new CANNON.Box(new CANNON.Vec3(0.125, 0.125, 0.125)); // Smaller cube size
     const cubeBody = new CANNON.Body({
         mass: 1
     });
     cubeBody.addShape(cubeShape);
-    cubeBody.position.set(Math.random() * 10 - 5, 10, Math.random() * 10 - 5);
+
+    // Calculate random position in a circular pattern around the camera
+    const radius = 1.1; // Reduced radius of the circle
+    const angle = Math.random() * 2 * Math.PI; // Random angle
+    const x = radius * Math.cos(angle);
+    const z = radius * Math.sin(angle);
+    cubeBody.position.set(x, 10, z); // Drop from a height of 10 units
     world.addBody(cubeBody);
+
+    // Add collision event listener to make blocks stick to each other
+    cubeBody.addEventListener('collide', (event) => {
+        const contact = event.contact;
+        const otherBody = contact.bi === cubeBody ? contact.bj : contact.bi;
+
+        // Check if the other body is a cube
+        if (otherBody.shapes[0] instanceof CANNON.Box) {
+            const constraint = new CANNON.LockConstraint(cubeBody, otherBody);
+            world.addConstraint(constraint);
+        }
+    });
 
     return { mesh: cube, body: cubeBody };
 }
