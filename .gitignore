@@ -28,7 +28,7 @@ jspm_packages/
 .env
 
 # Webpack build artifacts
-dist/
+#dist/
 .bundle/
 
 # macOS
