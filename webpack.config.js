@@ -22,12 +22,10 @@ module.exports = {
     },
     resolve: {
         alias: {
-            'three': path.resolve(__dirname, 'node_modules/three/build/three.module.js'),
-            'OrbitControls': path.resolve(__dirname, 'node_modules/three/examples/jsm/controls/OrbitControls.js'),
-            'cannon-es': path.resolve(__dirname, 'node_modules/cannon-es/dist/cannon-es.js'),
+            'three': path.resolve('./node_modules/three'),
+            'OrbitControls': path.resolve('./node_modules/three/examples/jsm/controls/OrbitControls.js'),
         },
-        extensions: ['.js'],
-        mainFields: ['browser', 'module', 'main'],
     },
+    devtool: 'source-map',
     mode: 'development',
 };

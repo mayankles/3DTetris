@@ -1,6 +1,4 @@
 import * as THREE from 'three';
-import { OrbitControls } from 'OrbitControls';
-import * as CANNON from 'cannon-es';
 
 // Initialize the Three.js scene
 const scene = new THREE.Scene();
@@ -16,17 +14,9 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setClearColor(0x000000); // Set the background color
 document.body.appendChild(renderer.domElement);
 
-// Add OrbitControls to allow camera swivel
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true; // Enable damping (inertia)
-controls.dampingFactor = 0.25;
-controls.enableZoom = false; // Disable zoom
-controls.enablePan = false; // Disable panning
-controls.target.set(0, 0, 0); // Set the target to the center of the floor
-
 // Set the camera position to be 6 feet above the ground
 camera.position.set(0, 1.83, 0); // Position the camera 6 feet above the center
-camera.lookAt(0, 0, -10); // Make the camera look slightly downward
+camera.rotation.x = 0; // Make the camera look straight ahead
 
 // Add ambient light
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
@@ -51,53 +41,75 @@ const groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
 groundMesh.rotation.x = -Math.PI / 2; // Rotate to be horizontal
 scene.add(groundMesh);
 
-// Create the physics world
-const world = new CANNON.World();
-world.gravity.set(0, -9.82, 0); // Set gravity to pull objects downward
+// Define the block size
+const blockSize = 0.25; // Size of each block
 
-// Create a ground plane in the physics world
-const groundShape = new CANNON.Plane();
-const groundBody = new CANNON.Body({
-    mass: 0 // Mass of 0 makes it static
-});
-groundBody.addShape(groundShape);
-groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0); // Rotate to be horizontal
-world.addBody(groundBody);
+// Color palette
+const colors = [0xADD8E6, 0x90EE90, 0xFFD700, 0xFF6347];
 
-// Function to add a new cube to the scene and physics world
+// Function to create a rounded rectangle shape
+function createRoundedRectShape(width, height, radius) {
+    const shape = new THREE.Shape();
+    shape.moveTo(-width / 2 + radius, -height / 2);
+    shape.lineTo(width / 2 - radius, -height / 2);
+    shape.quadraticCurveTo(width / 2, -height / 2, width / 2, -height / 2 + radius);
+    shape.lineTo(width / 2, height / 2 - radius);
+    shape.quadraticCurveTo(width / 2, height / 2, width / 2 - radius, height / 2);
+    shape.lineTo(-width / 2 + radius, height / 2);
+    shape.quadraticCurveTo(-width / 2, height / 2, -width / 2, height / 2 - radius);
+    shape.lineTo(-width / 2, -height / 2 + radius);
+    shape.quadraticCurveTo(-width / 2, -height / 2, -width / 2 + radius, -height / 2);
+    return shape;
+}
+
+// Function to create a rounded block
+function createRoundedBlock(size, radius) {
+    const shape = createRoundedRectShape(size, size, radius);
+    const extrudeSettings = { depth: size, bevelEnabled: false };
+    const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+    return geometry;
+}
+
+// Function to add a new cube to the scene
 function addCube() {
-    const geometry = new THREE.BoxGeometry(0.25, 0.25, 0.25); // Smaller cube size
-    const material = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
+    const geometry = createRoundedBlock(blockSize, blockSize * 0.2); // Rounded block
+    const color = colors[Math.floor(Math.random() * colors.length)]; // Random color
+    const material = new THREE.MeshStandardMaterial({ color });
     const cube = new THREE.Mesh(geometry, material);
     scene.add(cube);
 
-    const cubeShape = new CANNON.Box(new CANNON.Vec3(0.125, 0.125, 0.125)); // Smaller cube size
-    const cubeBody = new CANNON.Body({
-        mass: 1
-    });
-    cubeBody.addShape(cubeShape);
-
     // Calculate random position in a circular pattern around the camera
-    const radius = 1.1; // Reduced radius of the circle
+    const radius = 1.1; // Radius of the circle
     const angle = Math.random() * 2 * Math.PI; // Random angle
     const x = radius * Math.cos(angle);
     const z = radius * Math.sin(angle);
-    cubeBody.position.set(x, 10, z); // Drop from a height of 10 units
-    world.addBody(cubeBody);
 
-    // Add collision event listener to make blocks stick to each other
-    cubeBody.addEventListener('collide', (event) => {
-        const contact = event.contact;
-        const otherBody = contact.bi === cubeBody ? contact.bj : contact.bi;
+    // Snap the initial position to the nearest grid position in polar coordinates
+    const snappedPosition = snapToPolarGrid(x, z);
+    const startHeight = 2; // Initial height above the ground
+    cube.position.set(snappedPosition.x, startHeight, snappedPosition.z);
 
-        // Check if the other body is a cube
-        if (otherBody.shapes[0] instanceof CANNON.Box) {
-            const constraint = new CANNON.LockConstraint(cubeBody, otherBody);
-            world.addConstraint(constraint);
-        }
-    });
+    return cube;
+}
 
-    return { mesh: cube, body: cubeBody };
+// Initialize a 3D array to track block positions
+const gridSize = 36; // Assuming a 6x6 grid with 6 blocks high
+const grid = Array.from({ length: gridSize }, () =>
+    Array.from({ length: gridSize }, () =>
+        Array(gridSize).fill(null)
+    )
+);
+
+// Function to calculate the nearest grid position in polar coordinates
+function snapToPolarGrid(x, z) {
+    const radius = Math.sqrt(x * x + z * z);
+    const angle = Math.atan2(z, x);
+    const snappedRadius = Math.round(radius / blockSize) * blockSize;
+    const snappedAngle = Math.round(angle / (Math.PI / 8)) * (Math.PI / 8); // Snap to 16 angular positions
+    return {
+        x: snappedRadius * Math.cos(snappedAngle),
+        z: snappedRadius * Math.sin(snappedAngle)
+    };
 }
 
 // Array to store all cubes
@@ -108,56 +120,75 @@ setInterval(() => {
     cubes.push(addCube());
 }, 1000);
 
-// Object to store the current state of key presses
-const keys = {};
+// Variables to track mouse movement and camera angles
+let isMouseDown = false;
+let mouseX = 0;
+let mouseY = 0;
+let theta = 0; // Horizontal angle
+let phi = Math.PI / 2; // Vertical angle (start looking straight ahead)
 
-// Add event listeners for keydown and keyup
-window.addEventListener('keydown', (event) => {
-    keys[event.key] = true;
+// Event listeners for mouse movements
+document.addEventListener('mousedown', (event) => {
+    isMouseDown = true;
+    mouseX = event.clientX;
+    mouseY = event.clientY;
 });
 
-window.addEventListener('keyup', (event) => {
-    keys[event.key] = false;
+document.addEventListener('mouseup', () => {
+    isMouseDown = false;
 });
 
-// Function to handle user input and move cubes
-function handleUserInput() {
-    cubes.forEach(({ body }) => {
-        if (keys['ArrowLeft']) {
-            body.position.x -= 0.1;
-        }
-        if (keys['ArrowRight']) {
-            body.position.x += 0.1;
-        }
-        if (keys['ArrowUp']) {
-            body.position.z -= 0.1;
-        }
-        if (keys['ArrowDown']) {
-            body.position.z += 0.1;
-        }
-    });
+document.addEventListener('mousemove', (event) => {
+    if (isMouseDown) {
+        const deltaX = event.clientX - mouseX;
+        const deltaY = event.clientY - mouseY;
+        mouseX = event.clientX;
+        mouseY = event.clientY;
+
+        // Update angles based on mouse movement
+        theta -= deltaX * 0.005;
+        phi -= deltaY * 0.005;
+
+        // Clamp the vertical angle to avoid flipping
+        phi = Math.max(0.1, Math.min(Math.PI - 0.1, phi));
+
+        // Update camera position based on angles
+        const radius = 1.83; // Distance from the center
+        camera.position.x = radius * Math.sin(phi) * Math.cos(theta);
+        camera.position.y = radius * Math.cos(phi);
+        camera.position.z = radius * Math.sin(phi) * Math.sin(theta);
+        camera.lookAt(0, 0, 0); // Always look at the center
+    }
+});
+
+// Function to check for collisions and update the grid
+function checkCollisionAndUpdateGrid(cube) {
+    const xIndex = Math.round(cube.position.x / blockSize) + gridSize / 2;
+    const yIndex = Math.round(cube.position.y / blockSize);
+    const zIndex = Math.round(cube.position.z / blockSize) + gridSize / 2;
+
+    if (yIndex <= 0 || grid[xIndex][yIndex - 1][zIndex] !== null) {
+        // Snap to grid position
+        cube.position.y = yIndex * blockSize;
+        grid[xIndex][yIndex][zIndex] = cube;
+
+        return true;
+    }
+
+    return false;
 }
 
-// Rendering loop
+// Animation loop
 function animate() {
     requestAnimationFrame(animate);
 
-    // Handle user input
-    handleUserInput();
-
-    // Update physics
-    world.step(1 / 60);
-
-    // Update cube positions
-    cubes.forEach(({ mesh, body }) => {
-        mesh.position.copy(body.position);
-        mesh.quaternion.copy(body.quaternion);
+    // Move cubes downward at a constant speed
+    cubes.forEach(cube => {
+        if (!checkCollisionAndUpdateGrid(cube)) {
+            cube.position.y -= 0.01; // Adjust speed as needed
+        }
     });
 
-    // Update controls
-    controls.update();
-
-    // Render the scene
     renderer.render(scene, camera);
 }
 
