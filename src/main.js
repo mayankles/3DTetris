@@ -47,7 +47,7 @@ const blockSize = 0.25; // Size of each block
 // Color palette
 const colors = [0xADD8E6, 0x90EE90, 0xFFD700, 0xFF6347];
 
-// Function to create a rounded rectangle shape
+// Function to create a rounded rectangle shape with rounded corners
 function createRoundedRectShape(width, height, radius) {
     const shape = new THREE.Shape();
     shape.moveTo(-width / 2 + radius, -height / 2);
@@ -65,14 +65,14 @@ function createRoundedRectShape(width, height, radius) {
 // Function to create a rounded block
 function createRoundedBlock(size, radius) {
     const shape = createRoundedRectShape(size, size, radius);
-    const extrudeSettings = { depth: size, bevelEnabled: false };
+    const extrudeSettings = { depth: size, bevelEnabled: true, bevelSegments: 2, steps: 4, bevelSize: radius, bevelThickness: radius };
     const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
     return geometry;
 }
 
 // Function to add a new cube to the scene
 function addCube() {
-    const geometry = createRoundedBlock(blockSize, blockSize * 0.2); // Rounded block
+    const geometry = createRoundedBlock(blockSize, blockSize * 0.2); // Rounded block with rounded corners
     const color = colors[Math.floor(Math.random() * colors.length)]; // Random color
     const material = new THREE.MeshStandardMaterial({ color });
     const cube = new THREE.Mesh(geometry, material);
@@ -120,10 +120,13 @@ setInterval(() => {
     cubes.push(addCube());
 }, 1000);
 
-// Variables to track mouse movement and camera angles
+// Variables to track mouse and touch movement and camera angles
 let isMouseDown = false;
+let isTouching = false;
 let mouseX = 0;
 let mouseY = 0;
+let touchX = 0;
+let touchY = 0;
 let theta = 0; // Horizontal angle
 let phi = Math.PI / 2; // Vertical angle (start looking straight ahead)
 
@@ -146,6 +149,40 @@ document.addEventListener('mousemove', (event) => {
         mouseY = event.clientY;
 
         // Update angles based on mouse movement
+        theta -= deltaX * 0.005;
+        phi -= deltaY * 0.005;
+
+        // Clamp the vertical angle to avoid flipping
+        phi = Math.max(0.1, Math.min(Math.PI - 0.1, phi));
+
+        // Update camera position based on angles
+        const radius = 1.83; // Distance from the center
+        camera.position.x = radius * Math.sin(phi) * Math.cos(theta);
+        camera.position.y = radius * Math.cos(phi);
+        camera.position.z = radius * Math.sin(phi) * Math.sin(theta);
+        camera.lookAt(0, 0, 0); // Always look at the center
+    }
+});
+
+// Event listeners for touch movements
+document.addEventListener('touchstart', (event) => {
+    isTouching = true;
+    touchX = event.touches[0].clientX;
+    touchY = event.touches[0].clientY;
+});
+
+document.addEventListener('touchend', () => {
+    isTouching = false;
+});
+
+document.addEventListener('touchmove', (event) => {
+    if (isTouching) {
+        const deltaX = event.touches[0].clientX - touchX;
+        const deltaY = event.touches[0].clientY - touchY;
+        touchX = event.touches[0].clientX;
+        touchY = event.touches[0].clientY;
+
+        // Update angles based on touch movement
         theta -= deltaX * 0.005;
         phi -= deltaY * 0.005;
 

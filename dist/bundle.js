@@ -54467,7 +54467,7 @@ var blockSize = 0.25; // Size of each block
 // Color palette
 var colors = [0xADD8E6, 0x90EE90, 0xFFD700, 0xFF6347];
 
-// Function to create a rounded rectangle shape
+// Function to create a rounded rectangle shape with rounded corners
 function createRoundedRectShape(width, height, radius) {
   var shape = new three__WEBPACK_IMPORTED_MODULE_0__.Shape();
   shape.moveTo(-width / 2 + radius, -height / 2);
@@ -54487,7 +54487,11 @@ function createRoundedBlock(size, radius) {
   var shape = createRoundedRectShape(size, size, radius);
   var extrudeSettings = {
     depth: size,
-    bevelEnabled: false
+    bevelEnabled: true,
+    bevelSegments: 2,
+    steps: 4,
+    bevelSize: radius,
+    bevelThickness: radius
   };
   var geometry = new three__WEBPACK_IMPORTED_MODULE_0__.ExtrudeGeometry(shape, extrudeSettings);
   return geometry;
@@ -54495,7 +54499,7 @@ function createRoundedBlock(size, radius) {
 
 // Function to add a new cube to the scene
 function addCube() {
-  var geometry = createRoundedBlock(blockSize, blockSize * 0.2); // Rounded block
+  var geometry = createRoundedBlock(blockSize, blockSize * 0.2); // Rounded block with rounded corners
   var color = colors[Math.floor(Math.random() * colors.length)]; // Random color
   var material = new three__WEBPACK_IMPORTED_MODULE_0__.MeshStandardMaterial({
     color: color
@@ -54548,10 +54552,13 @@ setInterval(function () {
   cubes.push(addCube());
 }, 1000);
 
-// Variables to track mouse movement and camera angles
+// Variables to track mouse and touch movement and camera angles
 var isMouseDown = false;
+var isTouching = false;
 var mouseX = 0;
 var mouseY = 0;
+var touchX = 0;
+var touchY = 0;
 var theta = 0; // Horizontal angle
 var phi = Math.PI / 2; // Vertical angle (start looking straight ahead)
 
@@ -54572,6 +54579,38 @@ document.addEventListener('mousemove', function (event) {
     mouseY = event.clientY;
 
     // Update angles based on mouse movement
+    theta -= deltaX * 0.005;
+    phi -= deltaY * 0.005;
+
+    // Clamp the vertical angle to avoid flipping
+    phi = Math.max(0.1, Math.min(Math.PI - 0.1, phi));
+
+    // Update camera position based on angles
+    var radius = 1.83; // Distance from the center
+    camera.position.x = radius * Math.sin(phi) * Math.cos(theta);
+    camera.position.y = radius * Math.cos(phi);
+    camera.position.z = radius * Math.sin(phi) * Math.sin(theta);
+    camera.lookAt(0, 0, 0); // Always look at the center
+  }
+});
+
+// Event listeners for touch movements
+document.addEventListener('touchstart', function (event) {
+  isTouching = true;
+  touchX = event.touches[0].clientX;
+  touchY = event.touches[0].clientY;
+});
+document.addEventListener('touchend', function () {
+  isTouching = false;
+});
+document.addEventListener('touchmove', function (event) {
+  if (isTouching) {
+    var deltaX = event.touches[0].clientX - touchX;
+    var deltaY = event.touches[0].clientY - touchY;
+    touchX = event.touches[0].clientX;
+    touchY = event.touches[0].clientY;
+
+    // Update angles based on touch movement
     theta -= deltaX * 0.005;
     phi -= deltaY * 0.005;
 
