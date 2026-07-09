@@ -1,4 +1,7 @@
 import * as THREE from 'three';
+import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
+import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
+import fontJson from 'three/examples/fonts/gentilis_bold.typeface.json';
 
 // Initialize the Three.js scene
 const scene = new THREE.Scene();
@@ -41,84 +44,144 @@ const groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
 groundMesh.rotation.x = -Math.PI / 2; // Rotate to be horizontal
 scene.add(groundMesh);
 
-// Define the block size
-const blockSize = 0.25; // Size of each block
-
 // Color palette
 const colors = [0xADD8E6, 0x90EE90, 0xFFD700, 0xFF6347];
 
-// Function to create a rounded rectangle shape with rounded corners
-function createRoundedRectShape(width, height, radius) {
+// Define the block size
+const blockSize = 0.25; // Size of each block
+const bevelSize = blockSize * 0.1; // Bevel size
+
+// Calculate the grid size based on the dimensions of the ring segments
+const innerRadius = 1.1; // Inner radius of the ring
+const outerRadius = innerRadius + blockSize; // Outer radius of the ring
+const thetaLength = Math.PI / 8; // Angle of the segment
+const maxHeight = 2; // Maximum height of the grid
+
+const gridHeight = Math.ceil(maxHeight / blockSize);
+const gridTheta = Math.ceil((2 * Math.PI) / thetaLength);
+
+// Initialize a 2D array to track block positions
+const grid = Array.from({ length: gridTheta }, () =>
+    Array(gridHeight).fill(null)
+);
+
+// Load font for text labels
+const fontLoader = new FontLoader();
+let font = fontLoader.parse(fontJson);
+
+// Function to create a ring segment shape with rounded edges/corners
+function createRingSegmentShape(innerRadius, outerRadius, thetaStart, thetaLength) {
     const shape = new THREE.Shape();
-    shape.moveTo(-width / 2 + radius, -height / 2);
-    shape.lineTo(width / 2 - radius, -height / 2);
-    shape.quadraticCurveTo(width / 2, -height / 2, width / 2, -height / 2 + radius);
-    shape.lineTo(width / 2, height / 2 - radius);
-    shape.quadraticCurveTo(width / 2, height / 2, width / 2 - radius, height / 2);
-    shape.lineTo(-width / 2 + radius, height / 2);
-    shape.quadraticCurveTo(-width / 2, height / 2, -width / 2, height / 2 - radius);
-    shape.lineTo(-width / 2, -height / 2 + radius);
-    shape.quadraticCurveTo(-width / 2, -height / 2, -width / 2 + radius, -height / 2);
+    shape.moveTo(innerRadius * Math.cos(thetaStart), innerRadius * Math.sin(thetaStart));
+    shape.lineTo(outerRadius * Math.cos(thetaStart), outerRadius * Math.sin(thetaStart));
+    shape.absarc(0, 0, outerRadius, thetaStart, thetaStart + thetaLength, false);
+    shape.lineTo(innerRadius * Math.cos(thetaStart + thetaLength), innerRadius * Math.sin(thetaStart + thetaLength));
+    shape.absarc(0, 0, innerRadius, thetaStart + thetaLength, thetaStart, true);
     return shape;
 }
 
-// Function to create a rounded block
-function createRoundedBlock(size, radius) {
-    const shape = createRoundedRectShape(size, size, radius);
-    const extrudeSettings = { depth: size, bevelEnabled: true, bevelSegments: 2, steps: 4, bevelSize: radius, bevelThickness: radius };
+// Function to create a ring segment block
+function createRingSegmentBlock(innerRadius, outerRadius, thetaStart, thetaLength, thickness) {
+    const shape = createRingSegmentShape(innerRadius, outerRadius, thetaStart, thetaLength);
+    const extrudeSettings = {
+        steps: 1,
+        depth: thickness,
+        bevelEnabled: true,
+        bevelThickness: bevelSize,
+        bevelSize: bevelSize,
+        bevelSegments: 1
+    };
     const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
     return geometry;
 }
 
-// Function to add a new cube to the scene
-function addCube() {
-    const geometry = createRoundedBlock(blockSize, blockSize * 0.2); // Rounded block with rounded corners
+// Function to create text geometry
+function createText(text, size = 0.05) {
+    const textGeometry = new TextGeometry(text, {
+        font: font,
+        size: size,
+        depth: 0.01, // Use depth instead of height
+        curveSegments: 12,
+        bevelEnabled: false
+    });
+    const textMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const textMesh = new THREE.Mesh(textGeometry, textMaterial);
+    return textMesh;
+}
+
+// Function to snap theta to the nearest grid position
+function snapTheta(theta) {
+    const snappedTheta = Math.round(theta / thetaLength) * thetaLength;
+    return snappedTheta;
+}
+
+// Function to add a new ring segment to the scene
+function addRingSegment() {
+    let thetaStart = Math.random() * 2 * Math.PI; // Random start angle
+    thetaStart = snapTheta(thetaStart); // Snap to nearest grid position
+    const thickness = blockSize; // Thickness of the block
+
+    const geometry = createRingSegmentBlock(innerRadius, outerRadius, thetaStart, thetaLength, thickness);
     const color = colors[Math.floor(Math.random() * colors.length)]; // Random color
     const material = new THREE.MeshStandardMaterial({ color });
-    const cube = new THREE.Mesh(geometry, material);
-    scene.add(cube);
+    const ringSegment = new THREE.Mesh(geometry, material);
+    scene.add(ringSegment);
 
-    // Calculate random position in a circular pattern around the camera
-    const radius = 1.1; // Radius of the circle
-    const angle = Math.random() * 2 * Math.PI; // Random angle
-    const x = radius * Math.cos(angle);
-    const z = radius * Math.sin(angle);
+    // Position the ring segment
+    const startHeight = maxHeight; // Initial height above the ground
+    ringSegment.position.set(0, startHeight, 0);
+    ringSegment.rotation.x = -Math.PI / 2; // Rotate to align with the ground
 
-    // Snap the initial position to the nearest grid position in polar coordinates
-    const snappedPosition = snapToPolarGrid(x, z);
-    const startHeight = 2; // Initial height above the ground
-    cube.position.set(snappedPosition.x, startHeight, snappedPosition.z);
+    // Store the initial thetaStart for collision detection
+    ringSegment.userData.thetaStart = thetaStart;
 
-    return cube;
+    // Set the flag to indicate the block is moving
+    isBlockMoving = true;
+
+    // Add the ring segment to the array
+    ringSegments.push(ringSegment);
 }
 
-// Initialize a 3D array to track block positions
-const gridSize = 36; // Assuming a 6x6 grid with 6 blocks high
-const grid = Array.from({ length: gridSize }, () =>
-    Array.from({ length: gridSize }, () =>
-        Array(gridSize).fill(null)
-    )
-);
+// Variable to control the speed of the blocks
+let blockSpeed = 0.25; // Fall one block length at a time
 
-// Function to calculate the nearest grid position in polar coordinates
-function snapToPolarGrid(x, z) {
-    const radius = Math.sqrt(x * x + z * z);
-    const angle = Math.atan2(z, x);
-    const snappedRadius = Math.round(radius / blockSize) * blockSize;
-    const snappedAngle = Math.round(angle / (Math.PI / 8)) * (Math.PI / 8); // Snap to 16 angular positions
-    return {
-        x: snappedRadius * Math.cos(snappedAngle),
-        z: snappedRadius * Math.sin(snappedAngle)
-    };
+// Variable to control the delay between each block's movement (in milliseconds)
+let blockDelay = 500; // Initial delay, can be adjusted manually
+
+// Flag to track whether the current block is moving
+let isBlockMoving = false;
+
+// Function to check for collisions and update the grid
+function checkCollisionAndUpdateGrid(ringSegment) {
+    // Clamp the y position to ensure it is within the expected range
+    ringSegment.position.y = Math.max(0, Math.min(maxHeight, ringSegment.position.y));
+
+    const yIndex = Math.floor(ringSegment.position.y / blockSize);
+    const thetaIndex = Math.floor((ringSegment.userData.thetaStart / (2 * Math.PI)) * gridTheta);
+
+    console.log(`Checking collision for block at yIndex: ${yIndex}, thetaIndex: ${thetaIndex}`);
+
+    // Ensure indices are within bounds
+    if (thetaIndex < 0 || thetaIndex >= gridTheta || yIndex < 0 || yIndex >= gridHeight) {
+        console.log('Block out of bounds');
+        return false;
+    }
+
+    // Check if the block should stop due to collision with another block or the ground
+    if (yIndex <= 0 || grid[thetaIndex][yIndex - 1] !== null) {
+        console.log('Collision detected, snapping to grid position');
+        // Snap to grid position
+        ringSegment.position.y = yIndex * blockSize;
+        grid[thetaIndex][yIndex] = ringSegment;
+
+        return true;
+    }
+
+    return false;
 }
 
-// Array to store all cubes
-const cubes = [];
-
-// Add a new cube every second
-setInterval(() => {
-    cubes.push(addCube());
-}, 1000);
+// Array to store all ring segments
+const ringSegments = [];
 
 // Variables to track mouse and touch movement and camera angles
 let isMouseDown = false;
@@ -198,35 +261,28 @@ document.addEventListener('touchmove', (event) => {
     }
 });
 
-// Function to check for collisions and update the grid
-function checkCollisionAndUpdateGrid(cube) {
-    const xIndex = Math.round(cube.position.x / blockSize) + gridSize / 2;
-    const yIndex = Math.round(cube.position.y / blockSize);
-    const zIndex = Math.round(cube.position.z / blockSize) + gridSize / 2;
-
-    if (yIndex <= 0 || grid[xIndex][yIndex - 1][zIndex] !== null) {
-        // Snap to grid position
-        cube.position.y = yIndex * blockSize;
-        grid[xIndex][yIndex][zIndex] = cube;
-
-        return true;
-    }
-
-    return false;
-}
-
-// Animation loop
+// Animation loop with delay
 function animate() {
-    requestAnimationFrame(animate);
+    setTimeout(() => {
+        requestAnimationFrame(animate);
 
-    // Move cubes downward at a constant speed
-    cubes.forEach(cube => {
-        if (!checkCollisionAndUpdateGrid(cube)) {
-            cube.position.y -= 0.01; // Adjust speed as needed
+        // Move ring segments downward at a constant speed
+        ringSegments.forEach(ringSegment => {
+            if (!checkCollisionAndUpdateGrid(ringSegment)) {
+                ringSegment.position.y -= blockSpeed; // Use the speed variable
+            } else {
+                // Block has stopped moving
+                isBlockMoving = false;
+            }
+        });
+
+        // Add a new ring segment if the current block has stopped moving
+        if (!isBlockMoving && ringSegments.length === 0) {
+            addRingSegment();
         }
-    });
 
-    renderer.render(scene, camera);
+        renderer.render(scene, camera);
+    }, blockDelay);
 }
 
 animate();
