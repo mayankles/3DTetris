@@ -388,6 +388,16 @@ function hardDrop() {
 let camYaw = 0, camPitch = 0.1;
 let lastManualLook = -Infinity;
 
+// User zoom (0 = in the pit, 1 = pulled back above the rim looking down). We
+// can't fit more columns from inside the ring, so zooming out lifts the camera
+// up and back over the rim rather than stepping straight back (which would put
+// the near wall between you and the well). zoomCur eases toward zoomTarget.
+let zoomTarget = 0, zoomCur = 0;
+const ZOOM_BACK = 4.5;   // extra metres back at full zoom
+const ZOOM_LIFT = 9.0;   // metres risen at full zoom (enough to clear the rim)
+const ZOOM_AIM_H = 1.2;  // height on the central axis the overhead view looks at
+const setZoom = v => { zoomTarget = clamp(v, 0, 1); };
+
 function pieceYaw() { return piece.col * THETA; }
 function piecePitch() {
     return clamp(Math.atan2((piece.row + 0.5) * BLOCK_H - EYE, INNER_R + pullback), -0.5, 0.8);
@@ -418,15 +428,32 @@ function updateCamera(dt, now) {
         camYaw += wrapAngle(pieceYaw() - camYaw) * k;
         camPitch += (piecePitch() - camPitch) * k;
     }
-    // camera rig: step back from center, opposite the view direction, so more
-    // of the facing wall fits in frame without widening the FOV
-    const cx = -Math.cos(camYaw) * pullback;
-    const cz = -Math.sin(camYaw) * pullback;
-    camera.position.set(cx, EYE, cz);
+    // In-pit pose (zoom 0): step back from center, opposite the view direction,
+    // so more of the facing wall fits without widening the FOV.
+    const p0x = -Math.cos(camYaw) * pullback;
+    const p0z = -Math.sin(camYaw) * pullback;
+    const a0x = p0x + Math.cos(camYaw) * Math.cos(camPitch);
+    const a0y = EYE + Math.sin(camPitch);
+    const a0z = p0z + Math.sin(camYaw) * Math.cos(camPitch);
+
+    // Overhead pose (zoom 1): further back, lifted above the rim, aimed down at
+    // the central axis so you look into the open top of the well.
+    const back1 = pullback + ZOOM_BACK;
+    const p1x = -Math.cos(camYaw) * back1;
+    const p1z = -Math.sin(camYaw) * back1;
+
+    // smooth the user zoom, then blend the two poses with a smoothstep
+    zoomCur += (zoomTarget - zoomCur) * (1 - Math.exp(-12 * dt));
+    const t = zoomCur * zoomCur * (3 - 2 * zoomCur);
+    camera.position.set(
+        p0x + (p1x - p0x) * t,
+        EYE + ZOOM_LIFT * t,
+        p0z + (p1z - p0z) * t
+    );
     camera.lookAt(
-        cx + Math.cos(camYaw) * Math.cos(camPitch),
-        EYE + Math.sin(camPitch),
-        cz + Math.sin(camYaw) * Math.cos(camPitch)
+        a0x + (0 - a0x) * t,
+        a0y + (ZOOM_AIM_H - a0y) * t,
+        a0z + (0 - a0z) * t
     );
 }
 
@@ -467,9 +494,23 @@ document.addEventListener('mousemove', e => {
     camPitch = clamp(camPitch - e.movementY * 0.0025, -0.7, 1.25);
 });
 
-// ---------- Look controls: drag fallback + double-tap ----------
+// ---------- Look controls: drag / pinch-zoom / double-tap ----------
 let dragging = false, dragMoved = false, lastX = 0, lastY = 0, lastTap = 0;
+const activePointers = new Map();
+let pinching = false, pinchDist = 0;
+
+const pointerSpread = () => {
+    const [a, b] = [...activePointers.values()];
+    return Math.hypot(a.x - b.x, a.y - b.y);
+};
+
 renderer.domElement.addEventListener('pointerdown', e => {
+    activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (activePointers.size === 2) {          // second finger → pinch, cancel drag
+        pinching = true; dragging = false;
+        pinchDist = pointerSpread();
+        return;
+    }
     dragging = true; dragMoved = false;
     lastX = e.clientX; lastY = e.clientY;
     if (e.pointerType === 'touch') {
@@ -478,8 +519,23 @@ renderer.domElement.addEventListener('pointerdown', e => {
         else lastTap = now;
     }
 });
-window.addEventListener('pointerup', () => (dragging = false));
+
+function endPointer(e) {
+    activePointers.delete(e.pointerId);
+    if (activePointers.size < 2) pinching = false;
+    if (activePointers.size === 0) dragging = false;
+}
+window.addEventListener('pointerup', endPointer);
+window.addEventListener('pointercancel', endPointer);
+
 window.addEventListener('pointermove', e => {
+    if (activePointers.has(e.pointerId)) activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pinching && activePointers.size >= 2) {   // spread fingers = zoom in
+        const d = pointerSpread();
+        if (pinchDist > 0) setZoom(zoomTarget - (d - pinchDist) * 0.004);
+        pinchDist = d;
+        return;
+    }
     if (!dragging || pointerLocked || gyro.active) return;
     const dx = e.clientX - lastX, dy = e.clientY - lastY;
     if (Math.abs(dx) + Math.abs(dy) > 3) dragMoved = true;
@@ -488,6 +544,12 @@ window.addEventListener('pointermove', e => {
     lastX = e.clientX; lastY = e.clientY;
     lastManualLook = performance.now();
 });
+
+// scroll wheel to zoom (desktop)
+renderer.domElement.addEventListener('wheel', e => {
+    e.preventDefault();
+    setZoom(zoomTarget + e.deltaY * 0.0012);
+}, { passive: false });
 
 // ---------- Look controls: device orientation (mobile) ----------
 const gyro = {
@@ -764,6 +826,8 @@ window.__game = {
     startGyro,
     get look() { return { yaw: camYaw, pitch: camPitch, locked: pointerLocked, gyro: gyro.active }; },
     get gyroState() { return { ...gyro }; },
+    get zoom() { return { target: zoomTarget, cur: zoomCur, camY: camera.position.y }; },
+    setZoom,
     set yaw(v) { camYaw = v; lastManualLook = performance.now(); },
     // fill a ring except skipCol, for testing clears from the console
     fillRing(row, skipCol = -1) {

@@ -26,6 +26,7 @@ you in.
 | Click | engage/release mouse-look (FPS-style free look) |
 | Drag (mouse or touch) | look around |
 | F / double-tap | snap the camera back to the falling piece |
+| Scroll / pinch | zoom out to an overhead view of the whole ring |
 | Move your phone | look around via device orientation (mobile) |
 
 On-screen buttons are provided for touch devices. On iOS the game asks for

@@ -54974,6 +54974,19 @@ function hardDrop() {
 var camYaw = 0,
   camPitch = 0.1;
 var lastManualLook = -Infinity;
+
+// User zoom (0 = in the pit, 1 = pulled back above the rim looking down). We
+// can't fit more columns from inside the ring, so zooming out lifts the camera
+// up and back over the rim rather than stepping straight back (which would put
+// the near wall between you and the well). zoomCur eases toward zoomTarget.
+var zoomTarget = 0,
+  zoomCur = 0;
+var ZOOM_BACK = 4.5; // extra metres back at full zoom
+var ZOOM_LIFT = 9.0; // metres risen at full zoom (enough to clear the rim)
+var ZOOM_AIM_H = 1.2; // height on the central axis the overhead view looks at
+var setZoom = function setZoom(v) {
+  zoomTarget = clamp(v, 0, 1);
+};
 function pieceYaw() {
   return piece.col * THETA;
 }
@@ -55005,12 +55018,25 @@ function updateCamera(dt, now) {
     camYaw += wrapAngle(pieceYaw() - camYaw) * k;
     camPitch += (piecePitch() - camPitch) * k;
   }
-  // camera rig: step back from center, opposite the view direction, so more
-  // of the facing wall fits in frame without widening the FOV
-  var cx = -Math.cos(camYaw) * pullback;
-  var cz = -Math.sin(camYaw) * pullback;
-  camera.position.set(cx, EYE, cz);
-  camera.lookAt(cx + Math.cos(camYaw) * Math.cos(camPitch), EYE + Math.sin(camPitch), cz + Math.sin(camYaw) * Math.cos(camPitch));
+  // In-pit pose (zoom 0): step back from center, opposite the view direction,
+  // so more of the facing wall fits without widening the FOV.
+  var p0x = -Math.cos(camYaw) * pullback;
+  var p0z = -Math.sin(camYaw) * pullback;
+  var a0x = p0x + Math.cos(camYaw) * Math.cos(camPitch);
+  var a0y = EYE + Math.sin(camPitch);
+  var a0z = p0z + Math.sin(camYaw) * Math.cos(camPitch);
+
+  // Overhead pose (zoom 1): further back, lifted above the rim, aimed down at
+  // the central axis so you look into the open top of the well.
+  var back1 = pullback + ZOOM_BACK;
+  var p1x = -Math.cos(camYaw) * back1;
+  var p1z = -Math.sin(camYaw) * back1;
+
+  // smooth the user zoom, then blend the two poses with a smoothstep
+  zoomCur += (zoomTarget - zoomCur) * (1 - Math.exp(-12 * dt));
+  var t = zoomCur * zoomCur * (3 - 2 * zoomCur);
+  camera.position.set(p0x + (p1x - p0x) * t, EYE + ZOOM_LIFT * t, p0z + (p1z - p0z) * t);
+  camera.lookAt(a0x + (0 - a0x) * t, a0y + (ZOOM_AIM_H - a0y) * t, a0z + (0 - a0z) * t);
 }
 function recenter() {
   if (!piece) return;
@@ -55049,13 +55075,33 @@ document.addEventListener('mousemove', function (e) {
   camPitch = clamp(camPitch - e.movementY * 0.0025, -0.7, 1.25);
 });
 
-// ---------- Look controls: drag fallback + double-tap ----------
+// ---------- Look controls: drag / pinch-zoom / double-tap ----------
 var dragging = false,
   dragMoved = false,
   lastX = 0,
   lastY = 0,
   lastTap = 0;
+var activePointers = new Map();
+var pinching = false,
+  pinchDist = 0;
+var pointerSpread = function pointerSpread() {
+  var _ref11 = _toConsumableArray(activePointers.values()),
+    a = _ref11[0],
+    b = _ref11[1];
+  return Math.hypot(a.x - b.x, a.y - b.y);
+};
 renderer.domElement.addEventListener('pointerdown', function (e) {
+  activePointers.set(e.pointerId, {
+    x: e.clientX,
+    y: e.clientY
+  });
+  if (activePointers.size === 2) {
+    // second finger → pinch, cancel drag
+    pinching = true;
+    dragging = false;
+    pinchDist = pointerSpread();
+    return;
+  }
   dragging = true;
   dragMoved = false;
   lastX = e.clientX;
@@ -55068,10 +55114,25 @@ renderer.domElement.addEventListener('pointerdown', function (e) {
     } else lastTap = now;
   }
 });
-window.addEventListener('pointerup', function () {
-  return dragging = false;
-});
+function endPointer(e) {
+  activePointers["delete"](e.pointerId);
+  if (activePointers.size < 2) pinching = false;
+  if (activePointers.size === 0) dragging = false;
+}
+window.addEventListener('pointerup', endPointer);
+window.addEventListener('pointercancel', endPointer);
 window.addEventListener('pointermove', function (e) {
+  if (activePointers.has(e.pointerId)) activePointers.set(e.pointerId, {
+    x: e.clientX,
+    y: e.clientY
+  });
+  if (pinching && activePointers.size >= 2) {
+    // spread fingers = zoom in
+    var d = pointerSpread();
+    if (pinchDist > 0) setZoom(zoomTarget - (d - pinchDist) * 0.004);
+    pinchDist = d;
+    return;
+  }
   if (!dragging || pointerLocked || gyro.active) return;
   var dx = e.clientX - lastX,
     dy = e.clientY - lastY;
@@ -55081,6 +55142,14 @@ window.addEventListener('pointermove', function (e) {
   lastX = e.clientX;
   lastY = e.clientY;
   lastManualLook = performance.now();
+});
+
+// scroll wheel to zoom (desktop)
+renderer.domElement.addEventListener('wheel', function (e) {
+  e.preventDefault();
+  setZoom(zoomTarget + e.deltaY * 0.0012);
+}, {
+  passive: false
 });
 
 // ---------- Look controls: device orientation (mobile) ----------
@@ -55436,6 +55505,14 @@ window.__game = {
   get gyroState() {
     return _objectSpread({}, gyro);
   },
+  get zoom() {
+    return {
+      target: zoomTarget,
+      cur: zoomCur,
+      camY: camera.position.y
+    };
+  },
+  setZoom: setZoom,
   set yaw(v) {
     camYaw = v;
     lastManualLook = performance.now();
