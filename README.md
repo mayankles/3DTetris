@@ -23,9 +23,15 @@ you in.
 | ↑ / W | rotate |
 | ↓ / S | soft drop |
 | Space | hard drop |
+| Click | engage/release mouse-look (FPS-style free look) |
 | Drag (mouse or touch) | look around |
+| F / double-tap | snap the camera back to the falling piece |
+| Move your phone | look around via device orientation (mobile) |
 
-On-screen buttons are provided for touch devices.
+On-screen buttons are provided for touch devices. On iOS the game asks for
+motion-sensor permission when you tap START; if denied, drag-look still works.
+When you look away from the falling piece, an edge arrow points the shortest
+way back to it.
 
 ## Tech
 

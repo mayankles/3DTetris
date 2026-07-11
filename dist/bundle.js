@@ -54941,38 +54941,180 @@ function hardDrop() {
 var camYaw = 0,
   camPitch = 0.1;
 var lastManualLook = -Infinity;
+function pieceYaw() {
+  return piece.col * THETA;
+}
+function piecePitch() {
+  return clamp(Math.atan2((piece.row + 0.5) * BLOCK_H - EYE, INNER_R), -0.5, 0.8);
+}
 function updateCamera(dt, now) {
-  if (piece && now - lastManualLook > 1200) {
-    // auto-follow the falling piece
-    var targetYaw = piece.col * THETA;
-    var targetPitch = clamp(Math.atan2((piece.row + 0.5) * BLOCK_H - EYE, INNER_R), -0.5, 0.8);
+  if (gyro.active) {
+    // phone orientation drives the camera directly
+    camYaw = gyro.yaw - gyro.yawOffset;
+    camPitch = clamp(gyro.pitch, -0.9, 1.3);
+  } else if (!pointerLocked && piece && now - lastManualLook > 1200) {
+    // classic mode: auto-follow the falling piece
     var k = 1 - Math.exp(-4 * dt);
-    camYaw += (mod(targetYaw - camYaw + Math.PI, Math.PI * 2) - Math.PI) * k;
-    camPitch += (targetPitch - camPitch) * k;
+    camYaw += (mod(pieceYaw() - camYaw + Math.PI, Math.PI * 2) - Math.PI) * k;
+    camPitch += (piecePitch() - camPitch) * k;
   }
   camera.lookAt(Math.cos(camYaw) * Math.cos(camPitch), EYE + Math.sin(camPitch), Math.sin(camYaw) * Math.cos(camPitch));
 }
+function recenter() {
+  if (!piece) return;
+  if (gyro.active) {
+    gyro.yawOffset = gyro.yaw - pieceYaw(); // re-map current phone heading to the piece
+  } else {
+    camYaw = pieceYaw();
+    camPitch = piecePitch();
+  }
+  lastManualLook = -Infinity; // let auto-follow take over again in drag mode
+}
 
-// drag to look (mouse + touch, via pointer events)
+// ---------- Look controls: pointer lock (desktop) ----------
+var pointerLocked = false;
+renderer.domElement.addEventListener('click', function () {
+  if (dragMoved || gyro.active || state !== 'playing') return;
+  if (pointerLocked) {
+    document.exitPointerLock();
+  } else {
+    var _renderer$domElement$, _renderer$domElement;
+    // browsers can refuse (hidden tab, iframe policy) — drag still works
+    var p = (_renderer$domElement$ = (_renderer$domElement = renderer.domElement).requestPointerLock) === null || _renderer$domElement$ === void 0 ? void 0 : _renderer$domElement$.call(_renderer$domElement);
+    if (p && p["catch"]) p["catch"](function () {});
+  }
+});
+document.addEventListener('pointerlockchange', function () {
+  pointerLocked = document.pointerLockElement === renderer.domElement;
+  updateLookHint();
+});
+document.addEventListener('mousemove', function (e) {
+  if (!pointerLocked) return;
+  camYaw += e.movementX * 0.0025;
+  camPitch = clamp(camPitch - e.movementY * 0.0025, -0.7, 1.25);
+});
+
+// ---------- Look controls: drag fallback + double-tap ----------
 var dragging = false,
+  dragMoved = false,
   lastX = 0,
-  lastY = 0;
+  lastY = 0,
+  lastTap = 0;
 renderer.domElement.addEventListener('pointerdown', function (e) {
   dragging = true;
+  dragMoved = false;
   lastX = e.clientX;
   lastY = e.clientY;
+  if (e.pointerType === 'touch') {
+    var now = performance.now();
+    if (now - lastTap < 350) recenter();
+    lastTap = now;
+  }
 });
 window.addEventListener('pointerup', function () {
   return dragging = false;
 });
 window.addEventListener('pointermove', function (e) {
-  if (!dragging) return;
-  camYaw += (e.clientX - lastX) * 0.005;
-  camPitch = clamp(camPitch - (e.clientY - lastY) * 0.005, -0.6, 1.2);
+  if (!dragging || pointerLocked || gyro.active) return;
+  var dx = e.clientX - lastX,
+    dy = e.clientY - lastY;
+  if (Math.abs(dx) + Math.abs(dy) > 3) dragMoved = true;
+  camYaw += dx * 0.005;
+  camPitch = clamp(camPitch - dy * 0.005, -0.6, 1.2);
   lastX = e.clientX;
   lastY = e.clientY;
   lastManualLook = performance.now();
 });
+
+// ---------- Look controls: device orientation (mobile) ----------
+var gyro = {
+  active: false,
+  listening: false,
+  calibrated: false,
+  yaw: 0,
+  pitch: 0,
+  yawOffset: 0
+};
+var isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+var _euler = new three__WEBPACK_IMPORTED_MODULE_0__.Euler();
+var _q = new three__WEBPACK_IMPORTED_MODULE_0__.Quaternion();
+var _qScreen = new three__WEBPACK_IMPORTED_MODULE_0__.Quaternion();
+var _qFlip = new three__WEBPACK_IMPORTED_MODULE_0__.Quaternion(-Math.SQRT1_2, 0, 0, Math.SQRT1_2); // camera looks out the back of the phone
+var _zAxis = new three__WEBPACK_IMPORTED_MODULE_0__.Vector3(0, 0, 1);
+var _dir = new three__WEBPACK_IMPORTED_MODULE_0__.Vector3();
+var DEG = Math.PI / 180;
+function onDeviceOrientation(e) {
+  if (e.alpha == null || e.beta == null || e.gamma == null) return;
+  var screenAngle = (window.screen.orientation && window.screen.orientation.angle || window.orientation || 0) * DEG;
+  _euler.set(e.beta * DEG, e.alpha * DEG, -e.gamma * DEG, 'YXZ');
+  _q.setFromEuler(_euler).multiply(_qFlip).multiply(_qScreen.setFromAxisAngle(_zAxis, -screenAngle));
+  _dir.set(0, 0, -1).applyQuaternion(_q);
+  gyro.yaw = Math.atan2(_dir.z, _dir.x);
+  gyro.pitch = Math.asin(clamp(_dir.y, -1, 1));
+  if (!gyro.calibrated) {
+    gyro.yawOffset = gyro.yaw - camYaw; // current phone heading = current view
+    gyro.calibrated = true;
+  }
+  if (!gyro.active) {
+    gyro.active = true;
+    updateLookHint();
+  }
+}
+function startGyro() {
+  if (gyro.listening) return;
+  gyro.listening = true;
+  window.addEventListener('deviceorientation', onDeviceOrientation);
+}
+
+// iOS needs an explicit permission request from a user gesture; Android just works.
+function requestGyro() {
+  var D = window.DeviceOrientationEvent;
+  if (!D) return;
+  if (typeof D.requestPermission === 'function') {
+    D.requestPermission().then(function (s) {
+      if (s === 'granted') startGyro();
+    })["catch"](function () {});
+  } else {
+    startGyro();
+  }
+}
+
+// ---------- Off-screen piece indicator ----------
+var arrowEl = document.getElementById('piece-arrow');
+var _pv = new three__WEBPACK_IMPORTED_MODULE_0__.Vector3();
+function updateArrow() {
+  if (!piece || state !== 'playing') {
+    arrowEl.style.opacity = 0;
+    return;
+  }
+  var a = pieceYaw();
+  _pv.set(Math.cos(a) * INNER_R, (piece.row + 0.5) * BLOCK_H, Math.sin(a) * INNER_R).project(camera);
+  var behind = _pv.z > 1;
+  var x = _pv.x,
+    y = _pv.y;
+  if (behind) {
+    x = -x;
+    y = -y;
+  }
+  if (!behind && Math.abs(x) < 0.92 && Math.abs(y) < 0.92) {
+    arrowEl.style.opacity = 0;
+    return;
+  }
+  var m = 0.88 / Math.max(Math.abs(x), Math.abs(y));
+  var px = (x * m + 1) / 2 * window.innerWidth;
+  var py = (1 - y * m) / 2 * window.innerHeight;
+  var ang = Math.atan2(-y, x); // CSS y points down
+  arrowEl.style.transform = "translate(".concat(px.toFixed(1), "px, ").concat(py.toFixed(1), "px) translate(-50%,-50%) rotate(").concat(ang.toFixed(3), "rad)");
+  arrowEl.classList.toggle('low', piece.row <= 3);
+  arrowEl.style.opacity = 0.9;
+}
+
+// ---------- Look-mode hint ----------
+var lookHint = document.getElementById('look-hint');
+function updateLookHint() {
+  if (gyro.active) lookHint.textContent = 'MOVE PHONE TO LOOK · DOUBLE-TAP TO FACE PIECE';else if (pointerLocked) lookHint.textContent = 'ESC TO RELEASE MOUSE · F TO FACE PIECE';else if (isTouchDevice) lookHint.textContent = 'DRAG TO LOOK · DOUBLE-TAP TO FACE PIECE';else lookHint.textContent = 'CLICK TO ENGAGE MOUSE-LOOK · F TO FACE PIECE';
+}
+updateLookHint();
 
 // ---------- Danger feedback ----------
 var vignette = document.getElementById('vignette');
@@ -55076,15 +55218,20 @@ function startGame() {
   spawn();
 }
 function gameOver() {
+  var _document$exitPointer, _document;
   state = 'over';
   piece = null;
   hideGhost();
+  (_document$exitPointer = (_document = document).exitPointerLock) === null || _document$exitPointer === void 0 || _document$exitPointer.call(_document); // give the cursor back for the overlay
   finalScore.style.display = 'block';
   finalScore.textContent = "SCORE ".concat(score, " \u2014 ").concat(rings, " RINGS");
   startBtn.textContent = 'PLAY AGAIN';
   overlay.classList.remove('hidden');
 }
-startBtn.addEventListener('click', startGame);
+startBtn.addEventListener('click', function () {
+  if (isTouchDevice) requestGyro(); // must happen inside the tap gesture (iOS)
+  startGame();
+});
 
 // ---------- Input ----------
 window.addEventListener('keydown', function (e) {
@@ -55108,6 +55255,9 @@ window.addEventListener('keydown', function (e) {
     case 'ArrowDown':
     case 'KeyS':
       softDrop();
+      break;
+    case 'KeyF':
+      recenter();
       break;
     case 'Space':
       e.preventDefault();
@@ -55154,6 +55304,7 @@ function frame(now) {
   updateTweens(now);
   updateCamera(dt, now);
   updateDanger(now);
+  updateArrow();
   renderer.render(scene, camera);
 }
 requestAnimationFrame(frame);
@@ -55179,6 +55330,20 @@ window.__game = {
   },
   stackHeight: stackHeight,
   startGame: startGame,
+  recenter: recenter,
+  startGyro: startGyro,
+  get look() {
+    return {
+      yaw: camYaw,
+      pitch: camPitch,
+      locked: pointerLocked,
+      gyro: gyro.active
+    };
+  },
+  set yaw(v) {
+    camYaw = v;
+    lastManualLook = performance.now();
+  },
   // fill a ring except skipCol, for testing clears from the console
   fillRing: function fillRing(row) {
     var skipCol = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : -1;

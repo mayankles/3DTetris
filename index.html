@@ -36,6 +36,23 @@
             opacity: 0; transition: opacity .3s;
         }
 
+        #piece-arrow {
+            position: fixed; left: 0; top: 0; z-index: 4;
+            pointer-events: none; user-select: none;
+            font-size: 26px; color: #fff;
+            text-shadow: 0 0 10px rgba(0,0,0,.9);
+            opacity: 0; transition: opacity .15s;
+            will-change: transform;
+        }
+        #piece-arrow.low { color: #ff5040; }
+
+        #look-hint {
+            position: fixed; bottom: 84px; left: 50%; transform: translateX(-50%);
+            font-size: 10px; letter-spacing: 2px; color: #55648a;
+            pointer-events: none; user-select: none; white-space: nowrap;
+            text-shadow: 0 1px 3px rgba(0,0,0,.8);
+        }
+
         #overlay {
             position: fixed; inset: 0; display: flex;
             align-items: center; justify-content: center;
@@ -91,6 +108,8 @@
     </div>
     <div id="vignette"></div>
     <div id="flash"></div>
+    <div id="piece-arrow">&#10148;</div>
+    <div id="look-hint"></div>
 
     <div id="pads">
         <button id="pad-left" aria-label="Move left">&#9664;</button>
@@ -110,7 +129,9 @@
                 <div><b>&#8593; / W</b> rotate piece</div>
                 <div><b>&#8595; / S</b> soft drop</div>
                 <div><b>SPACE</b> hard drop</div>
-                <div><b>DRAG</b> look around</div>
+                <div><b>CLICK</b> engage mouse-look</div>
+                <div><b>F / 2-TAP</b> face the falling piece</div>
+                <div><b>PHONE</b> move it to look around</div>
             </div>
             <div><button id="start-btn">START</button></div>
         </div>
