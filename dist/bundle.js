@@ -54505,12 +54505,14 @@ function updateProjection() {
   camera.updateProjectionMatrix();
 
   // From the exact center every column spans 30° regardless of FOV, so to fit
-  // ~4 columns (a whole I piece) the camera steps back from the center, away
-  // from wherever it's looking. Solve the pullback for 4 columns in the actual
-  // horizontal FOV; the ring interior is always empty, so clamp inside it.
+  // more columns the camera steps back from center, away from wherever it's
+  // looking. Solve the pullback for ~5 columns in the actual horizontal FOV;
+  // the ring interior is always empty, so clamp inside it (portrait sits near
+  // this limit — ~6 would need to step back further than the ring is wide).
+  var TARGET_COLS = 5;
   var hFov = 2 * Math.atan(Math.tan(vFov / 2) * aspect);
   var chordHalf = INNER_R * Math.sin(THETA / 2);
-  pullback = clamp(chordHalf / Math.tan(hFov / 8) - INNER_R, 0, INNER_R - 0.3);
+  pullback = clamp(chordHalf / Math.tan(hFov / (2 * TARGET_COLS)) - INNER_R, 0, INNER_R - 0.2);
 }
 updateProjection();
 var renderer = new three__WEBPACK_IMPORTED_MODULE_0__.WebGLRenderer({
