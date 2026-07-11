@@ -2,10 +2,120 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>3D Tetris</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; overflow: hidden; background: #0a0d14; }
+        body { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; color: #dfe7f5; }
+        canvas.game { display: block; touch-action: none; }
+
+        #hud {
+            position: fixed; top: 16px; left: 18px;
+            pointer-events: none; user-select: none;
+            text-shadow: 0 1px 4px rgba(0,0,0,.8);
+            line-height: 1.7;
+        }
+        #hud .label { font-size: 10px; letter-spacing: 3px; color: #7d8db0; }
+        #hud .value { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+
+        #next-wrap {
+            position: fixed; top: 16px; right: 18px; text-align: right;
+            pointer-events: none; user-select: none;
+        }
+        #next-wrap .label { font-size: 10px; letter-spacing: 3px; color: #7d8db0; }
+        #next { margin-top: 6px; }
+
+        #vignette {
+            position: fixed; inset: 0; pointer-events: none;
+            box-shadow: inset 0 0 22vmin 6vmin rgba(255, 42, 30, 1);
+            opacity: 0; transition: opacity .35s;
+        }
+        #flash {
+            position: fixed; inset: 0; pointer-events: none; background: #fff;
+            opacity: 0; transition: opacity .3s;
+        }
+
+        #overlay {
+            position: fixed; inset: 0; display: flex;
+            align-items: center; justify-content: center;
+            background: rgba(6, 8, 13, .72); backdrop-filter: blur(3px);
+            z-index: 10;
+        }
+        #overlay.hidden { display: none; }
+        #overlay .panel {
+            text-align: center; padding: 36px 44px;
+            border: 1px solid #2a3550; border-radius: 12px;
+            background: rgba(10, 13, 20, .85);
+            max-width: 90vw;
+        }
+        #overlay h1 { font-size: 30px; letter-spacing: 6px; margin-bottom: 6px; }
+        #overlay .sub { color: #8fa0c4; font-size: 13px; margin-bottom: 22px; }
+        #overlay .controls { text-align: left; display: inline-block; font-size: 13px; color: #aebbd8; line-height: 2; margin-bottom: 24px; }
+        #overlay .controls b { color: #fff; display: inline-block; min-width: 110px; font-weight: 600; }
+        #overlay button {
+            font: inherit; font-size: 15px; letter-spacing: 2px;
+            padding: 12px 34px; cursor: pointer;
+            color: #0a0d14; background: #dfe7f5; border: 0; border-radius: 8px;
+        }
+        #overlay button:hover { background: #fff; }
+        #final-score { display: none; font-size: 20px; margin-bottom: 18px; }
+
+        #pads {
+            position: fixed; bottom: max(14px, env(safe-area-inset-bottom)); left: 50%;
+            transform: translateX(-50%);
+            display: flex; gap: 10px; z-index: 5;
+        }
+        #pads button {
+            width: 54px; height: 54px; border-radius: 50%;
+            border: 1px solid #38466b; background: rgba(16, 21, 33, .55);
+            color: #dfe7f5; font-size: 20px; cursor: pointer;
+            touch-action: manipulation; user-select: none; -webkit-user-select: none;
+        }
+        #pads button:active { background: rgba(60, 75, 115, .8); }
+        @media (hover: hover) and (pointer: fine) {
+            #pads { opacity: .35; }
+            #pads:hover { opacity: 1; }
+        }
+    </style>
 </head>
 <body>
+    <div id="hud">
+        <div class="label">SCORE</div><div class="value" id="score">0</div>
+        <div class="label">RINGS</div><div class="value" id="lines">0</div>
+        <div class="label">LEVEL</div><div class="value" id="level">1</div>
+    </div>
+    <div id="next-wrap">
+        <div class="label">NEXT</div>
+        <canvas id="next" width="76" height="76"></canvas>
+    </div>
+    <div id="vignette"></div>
+    <div id="flash"></div>
+
+    <div id="pads">
+        <button id="pad-left" aria-label="Move left">&#9664;</button>
+        <button id="pad-rot" aria-label="Rotate">&#10227;</button>
+        <button id="pad-down" aria-label="Soft drop">&#9660;</button>
+        <button id="pad-drop" aria-label="Hard drop">&#11123;</button>
+        <button id="pad-right" aria-label="Move right">&#9654;</button>
+    </div>
+
+    <div id="overlay">
+        <div class="panel">
+            <h1>TETRA&middot;RING</h1>
+            <div class="sub">The blocks fall all around you.<br>Clear full rings before they wall you in.</div>
+            <div id="final-score"></div>
+            <div class="controls">
+                <div><b>&#8592; &#8594; / A D</b> move around the ring</div>
+                <div><b>&#8593; / W</b> rotate piece</div>
+                <div><b>&#8595; / S</b> soft drop</div>
+                <div><b>SPACE</b> hard drop</div>
+                <div><b>DRAG</b> look around</div>
+            </div>
+            <div><button id="start-btn">START</button></div>
+        </div>
+    </div>
+
     <script src="dist/bundle.js"></script>
 </body>
 </html>

@@ -2,11 +2,11 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ "./node_modules/three/build/three.module.js":
+/***/ "./node_modules/three/build/three.module.js"
 /*!**************************************************!*\
   !*** ./node_modules/three/build/three.module.js ***!
   \**************************************************/
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+(__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
@@ -54349,28 +54349,34 @@ if ( typeof window !== 'undefined' ) {
 
 
 
-/***/ })
+/***/ }
 
 /******/ 	});
 /************************************************************************/
 /******/ 	// The module cache
-/******/ 	var __webpack_module_cache__ = {};
+/******/ 	const __webpack_module_cache__ = {};
 /******/ 	
 /******/ 	// The require function
 /******/ 	function __webpack_require__(moduleId) {
 /******/ 		// Check if module is in cache
-/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		const cachedModule = __webpack_module_cache__[moduleId];
 /******/ 		if (cachedModule !== undefined) {
 /******/ 			return cachedModule.exports;
 /******/ 		}
 /******/ 		// Create a new module (and put it into the cache)
-/******/ 		var module = __webpack_module_cache__[moduleId] = {
+/******/ 		const module = __webpack_module_cache__[moduleId] = {
 /******/ 			// no module.id needed
 /******/ 			// no module.loaded needed
 /******/ 			exports: {}
 /******/ 		};
 /******/ 	
 /******/ 		// Execute the module function
+/******/ 		if (!(moduleId in __webpack_modules__)) {
+/******/ 			delete __webpack_module_cache__[moduleId];
+/******/ 			const e = new Error("Cannot find module '" + moduleId + "'");
+/******/ 			e.code = 'MODULE_NOT_FOUND';
+/******/ 			throw e;
+/******/ 		}
 /******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
 /******/ 	
 /******/ 		// Return the exports of the module
@@ -54380,11 +54386,26 @@ if ( typeof window !== 'undefined' ) {
 /************************************************************************/
 /******/ 	/* webpack/runtime/define property getters */
 /******/ 	(() => {
-/******/ 		// define getter functions for harmony exports
+/******/ 		// define getter/value functions for harmony exports
 /******/ 		__webpack_require__.d = (exports, definition) => {
-/******/ 			for(var key in definition) {
-/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
-/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 			if(Array.isArray(definition)) {
+/******/ 				var i = 0;
+/******/ 				while(i < definition.length) {
+/******/ 					var key = definition[i++];
+/******/ 					var binding = definition[i++];
+/******/ 					if(!__webpack_require__.o(exports, key)) {
+/******/ 						if(binding === 0) {
+/******/ 							Object.defineProperty(exports, key, { enumerable: true, value: definition[i++] });
+/******/ 						} else {
+/******/ 							Object.defineProperty(exports, key, { enumerable: true, get: binding });
+/******/ 						}
+/******/ 					} else if(binding === 0) { i++; }
+/******/ 				}
+/******/ 			} else {
+/******/ 				for(var key in definition) {
+/******/ 					if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
+/******/ 						Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 					}
 /******/ 				}
 /******/ 			}
 /******/ 		};
@@ -54399,7 +54420,7 @@ if ( typeof window !== 'undefined' ) {
 /******/ 	(() => {
 /******/ 		// define __esModule on exports
 /******/ 		__webpack_require__.r = (exports) => {
-/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 			if(Symbol.toStringTag) {
 /******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
 /******/ 			}
 /******/ 			Object.defineProperty(exports, '__esModule', { value: true });
@@ -54407,252 +54428,771 @@ if ( typeof window !== 'undefined' ) {
 /******/ 	})();
 /******/ 	
 /************************************************************************/
-var __webpack_exports__ = {};
+let __webpack_exports__ = {};
+// This entry needs to be wrapped in an IIFE because it needs to be isolated against other modules in the chunk.
+(() => {
 /*!*********************!*\
   !*** ./src/main.js ***!
   \*********************/
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var three__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! three */ "./node_modules/three/build/three.module.js");
+function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
+function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
+function _createForOfIteratorHelper(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e && r && "number" == typeof r.length) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: !0 } : { done: !1, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = !0, u = !1; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = !0, o = r; }, f: function f() { try { a || null == t["return"] || t["return"](); } finally { if (u) throw o; } } }; }
+function _slicedToArray(r, e) { return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest(); }
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+function _iterableToArrayLimit(r, l) { var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (null != t) { var e, n, i, u, a = [], f = !0, o = !1; try { if (i = (t = t.call(r)).next, 0 === l) { if (Object(t) !== t) return; f = !1; } else for (; !(f = (e = i.call(t)).done) && (a.push(e.value), a.length !== l); f = !0); } catch (r) { o = !0, n = r; } finally { try { if (!f && null != t["return"] && (u = t["return"](), Object(u) !== u)) return; } finally { if (o) throw n; } } return a; } }
+function _arrayWithHoles(r) { if (Array.isArray(r)) return r; }
 
 
-// Initialize the Three.js scene
+// ============================================================
+// TETRA-RING: first-person Tetris on a faceted cylinder.
+// The playfield is a 2D Tetris grid (COLS x ROWS) wrapped into
+// a ring around the player. Columns wrap around; a "line clear"
+// is a full ring of 12 blocks at one height.
+// ============================================================
+
+// ---------- Tuning ----------
+var COLS = 12; // angular columns (ring segments)
+var ROWS = 12; // stack height in blocks
+var THETA = Math.PI * 2 / COLS; // angle per column
+var INNER_R = 2.2; // inner radius of the ring wall (m)
+var DEPTH = 0.55; // radial thickness of a block
+var BLOCK_H = 0.38; // height of a block
+var GAP = 0.05; // visual gap between blocks
+var EYE = 1.6; // camera eye height
+var WALL_H = ROWS * BLOCK_H;
+var DANGER_ROW = ROWS - 4; // stack height where warnings kick in
+var RINGS_PER_LEVEL = 6;
+var mod = function mod(n, m) {
+  return (n % m + m) % m;
+};
+var clamp = function clamp(v, a, b) {
+  return Math.max(a, Math.min(b, v));
+};
+
+// ---------- Scene / renderer ----------
 var scene = new three__WEBPACK_IMPORTED_MODULE_0__.Scene();
-var camera = new three__WEBPACK_IMPORTED_MODULE_0__.PerspectiveCamera(75,
-// Field of view
-window.innerWidth / window.innerHeight,
-// Aspect ratio
-0.1,
-// Near clipping plane
-1000 // Far clipping plane
-);
+scene.background = new three__WEBPACK_IMPORTED_MODULE_0__.Color(0x0a0d14);
+scene.fog = new three__WEBPACK_IMPORTED_MODULE_0__.Fog(0x0a0d14, 7, 16);
+var camera = new three__WEBPACK_IMPORTED_MODULE_0__.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+camera.position.set(0, EYE, 0);
 var renderer = new three__WEBPACK_IMPORTED_MODULE_0__.WebGLRenderer({
   antialias: true
 });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setClearColor(0x000000); // Set the background color
+renderer.toneMapping = three__WEBPACK_IMPORTED_MODULE_0__.ACESFilmicToneMapping;
+renderer.domElement.classList.add('game');
 document.body.appendChild(renderer.domElement);
-
-// Set the camera position to be 6 feet above the ground
-camera.position.set(0, 1.83, 0); // Position the camera 6 feet above the center
-camera.rotation.x = 0; // Make the camera look straight ahead
-
-// Add ambient light
-var ambientLight = new three__WEBPACK_IMPORTED_MODULE_0__.AmbientLight(0xffffff, 0.6);
-scene.add(ambientLight);
-
-// Add a directional light to simulate sunlight
-var directionalLight = new three__WEBPACK_IMPORTED_MODULE_0__.DirectionalLight(0xffffff, 1);
-directionalLight.position.set(5, 10, 7.5);
-scene.add(directionalLight);
-
-// Load texture for the floor
-var textureLoader = new three__WEBPACK_IMPORTED_MODULE_0__.TextureLoader();
-var floorTexture = textureLoader.load('assets/images/floor.jpg');
-floorTexture.wrapS = three__WEBPACK_IMPORTED_MODULE_0__.RepeatWrapping;
-floorTexture.wrapT = three__WEBPACK_IMPORTED_MODULE_0__.RepeatWrapping;
-floorTexture.repeat.set(3, 3); // Adjust texture repeat to fit the 30 ft square
-
-// Create a ground plane with texture
-var groundGeometry = new three__WEBPACK_IMPORTED_MODULE_0__.PlaneGeometry(9.14, 9.14); // 30 ft square
-var groundMaterial = new three__WEBPACK_IMPORTED_MODULE_0__.MeshStandardMaterial({
-  map: floorTexture
-});
-var groundMesh = new three__WEBPACK_IMPORTED_MODULE_0__.Mesh(groundGeometry, groundMaterial);
-groundMesh.rotation.x = -Math.PI / 2; // Rotate to be horizontal
-scene.add(groundMesh);
-
-// Define the block size
-var blockSize = 0.25; // Size of each block
-
-// Color palette
-var colors = [0xADD8E6, 0x90EE90, 0xFFD700, 0xFF6347];
-
-// Function to create a rounded rectangle shape with rounded corners
-function createRoundedRectShape(width, height, radius) {
-  var shape = new three__WEBPACK_IMPORTED_MODULE_0__.Shape();
-  shape.moveTo(-width / 2 + radius, -height / 2);
-  shape.lineTo(width / 2 - radius, -height / 2);
-  shape.quadraticCurveTo(width / 2, -height / 2, width / 2, -height / 2 + radius);
-  shape.lineTo(width / 2, height / 2 - radius);
-  shape.quadraticCurveTo(width / 2, height / 2, width / 2 - radius, height / 2);
-  shape.lineTo(-width / 2 + radius, height / 2);
-  shape.quadraticCurveTo(-width / 2, height / 2, -width / 2, height / 2 - radius);
-  shape.lineTo(-width / 2, -height / 2 + radius);
-  shape.quadraticCurveTo(-width / 2, -height / 2, -width / 2 + radius, -height / 2);
-  return shape;
-}
-
-// Function to create a rounded block
-function createRoundedBlock(size, radius) {
-  var shape = createRoundedRectShape(size, size, radius);
-  var extrudeSettings = {
-    depth: size,
-    bevelEnabled: true,
-    bevelSegments: 2,
-    steps: 4,
-    bevelSize: radius,
-    bevelThickness: radius
-  };
-  var geometry = new three__WEBPACK_IMPORTED_MODULE_0__.ExtrudeGeometry(shape, extrudeSettings);
-  return geometry;
-}
-
-// Function to add a new cube to the scene
-function addCube() {
-  var geometry = createRoundedBlock(blockSize, blockSize * 0.2); // Rounded block with rounded corners
-  var color = colors[Math.floor(Math.random() * colors.length)]; // Random color
-  var material = new three__WEBPACK_IMPORTED_MODULE_0__.MeshStandardMaterial({
-    color: color
-  });
-  var cube = new three__WEBPACK_IMPORTED_MODULE_0__.Mesh(geometry, material);
-  scene.add(cube);
-
-  // Calculate random position in a circular pattern around the camera
-  var radius = 1.1; // Radius of the circle
-  var angle = Math.random() * 2 * Math.PI; // Random angle
-  var x = radius * Math.cos(angle);
-  var z = radius * Math.sin(angle);
-
-  // Snap the initial position to the nearest grid position in polar coordinates
-  var snappedPosition = snapToPolarGrid(x, z);
-  var startHeight = 2; // Initial height above the ground
-  cube.position.set(snappedPosition.x, startHeight, snappedPosition.z);
-  return cube;
-}
-
-// Initialize a 3D array to track block positions
-var gridSize = 36; // Assuming a 6x6 grid with 6 blocks high
-var grid = Array.from({
-  length: gridSize
-}, function () {
-  return Array.from({
-    length: gridSize
-  }, function () {
-    return Array(gridSize).fill(null);
-  });
+window.addEventListener('resize', function () {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// Function to calculate the nearest grid position in polar coordinates
-function snapToPolarGrid(x, z) {
-  var radius = Math.sqrt(x * x + z * z);
-  var angle = Math.atan2(z, x);
-  var snappedRadius = Math.round(radius / blockSize) * blockSize;
-  var snappedAngle = Math.round(angle / (Math.PI / 8)) * (Math.PI / 8); // Snap to 16 angular positions
-  return {
-    x: snappedRadius * Math.cos(snappedAngle),
-    z: snappedRadius * Math.sin(snappedAngle)
-  };
-}
+// ---------- Lights ----------
+scene.add(new three__WEBPACK_IMPORTED_MODULE_0__.AmbientLight(0x99aacc, 0.55));
+var sun = new three__WEBPACK_IMPORTED_MODULE_0__.DirectionalLight(0xffffff, 1.2);
+sun.position.set(4, 10, 2);
+scene.add(sun);
 
-// Array to store all cubes
-var cubes = [];
+// The player is the lamp: nearby blocks glow as they close in.
+var LAMP_WARM = new three__WEBPACK_IMPORTED_MODULE_0__.Color(0xffe2b8);
+var LAMP_RED = new three__WEBPACK_IMPORTED_MODULE_0__.Color(0xff3524);
+var lamp = new three__WEBPACK_IMPORTED_MODULE_0__.PointLight(LAMP_WARM, 7, 20, 2);
+lamp.position.set(0, EYE + 0.4, 0);
+scene.add(lamp);
 
-// Add a new cube every second
-setInterval(function () {
-  cubes.push(addCube());
-}, 1000);
+// ---------- Floor + guides ----------
+scene.add(new three__WEBPACK_IMPORTED_MODULE_0__.Mesh(new three__WEBPACK_IMPORTED_MODULE_0__.CircleGeometry(9, 64).rotateX(-Math.PI / 2), new three__WEBPACK_IMPORTED_MODULE_0__.MeshStandardMaterial({
+  color: 0x141a26,
+  roughness: 0.95
+})));
 
-// Variables to track mouse and touch movement and camera angles
-var isMouseDown = false;
-var isTouching = false;
-var mouseX = 0;
-var mouseY = 0;
-var touchX = 0;
-var touchY = 0;
-var theta = 0; // Horizontal angle
-var phi = Math.PI / 2; // Vertical angle (start looking straight ahead)
-
-// Event listeners for mouse movements
-document.addEventListener('mousedown', function (event) {
-  isMouseDown = true;
-  mouseX = event.clientX;
-  mouseY = event.clientY;
-});
-document.addEventListener('mouseup', function () {
-  isMouseDown = false;
-});
-document.addEventListener('mousemove', function (event) {
-  if (isMouseDown) {
-    var deltaX = event.clientX - mouseX;
-    var deltaY = event.clientY - mouseY;
-    mouseX = event.clientX;
-    mouseY = event.clientY;
-
-    // Update angles based on mouse movement
-    theta -= deltaX * 0.005;
-    phi -= deltaY * 0.005;
-
-    // Clamp the vertical angle to avoid flipping
-    phi = Math.max(0.1, Math.min(Math.PI - 0.1, phi));
-
-    // Update camera position based on angles
-    var radius = 1.83; // Distance from the center
-    camera.position.x = radius * Math.sin(phi) * Math.cos(theta);
-    camera.position.y = radius * Math.cos(phi);
-    camera.position.z = radius * Math.sin(phi) * Math.sin(theta);
-    camera.lookAt(0, 0, 0); // Always look at the center
-  }
-});
-
-// Event listeners for touch movements
-document.addEventListener('touchstart', function (event) {
-  isTouching = true;
-  touchX = event.touches[0].clientX;
-  touchY = event.touches[0].clientY;
-});
-document.addEventListener('touchend', function () {
-  isTouching = false;
-});
-document.addEventListener('touchmove', function (event) {
-  if (isTouching) {
-    var deltaX = event.touches[0].clientX - touchX;
-    var deltaY = event.touches[0].clientY - touchY;
-    touchX = event.touches[0].clientX;
-    touchY = event.touches[0].clientY;
-
-    // Update angles based on touch movement
-    theta -= deltaX * 0.005;
-    phi -= deltaY * 0.005;
-
-    // Clamp the vertical angle to avoid flipping
-    phi = Math.max(0.1, Math.min(Math.PI - 0.1, phi));
-
-    // Update camera position based on angles
-    var radius = 1.83; // Distance from the center
-    camera.position.x = radius * Math.sin(phi) * Math.cos(theta);
-    camera.position.y = radius * Math.cos(phi);
-    camera.position.z = radius * Math.sin(phi) * Math.sin(theta);
-    camera.lookAt(0, 0, 0); // Always look at the center
-  }
-});
-
-// Function to check for collisions and update the grid
-function checkCollisionAndUpdateGrid(cube) {
-  var xIndex = Math.round(cube.position.x / blockSize) + gridSize / 2;
-  var yIndex = Math.round(cube.position.y / blockSize);
-  var zIndex = Math.round(cube.position.z / blockSize) + gridSize / 2;
-  if (yIndex <= 0 || grid[xIndex][yIndex - 1][zIndex] !== null) {
-    // Snap to grid position
-    cube.position.y = yIndex * blockSize;
-    grid[xIndex][yIndex][zIndex] = cube;
-    return true;
-  }
-  return false;
-}
-
-// Animation loop
-function animate() {
-  requestAnimationFrame(animate);
-
-  // Move cubes downward at a constant speed
-  cubes.forEach(function (cube) {
-    if (!checkCollisionAndUpdateGrid(cube)) {
-      cube.position.y -= 0.01; // Adjust speed as needed
+// Decorative polar grid on the floor
+{
+  var pts = [];
+  var circle = function circle(r, y) {
+    var n = 96;
+    for (var i = 0; i < n; i++) {
+      var a = i / n * Math.PI * 2,
+        b = (i + 1) / n * Math.PI * 2;
+      pts.push(r * Math.cos(a), y, r * Math.sin(a), r * Math.cos(b), y, r * Math.sin(b));
     }
+  };
+  [1.2, INNER_R, INNER_R + DEPTH, 4.5, 6.5, 8.5].forEach(function (r) {
+    return circle(r, 0.005);
   });
+  for (var c = 0; c < COLS; c++) {
+    var a = (c + 0.5) * THETA;
+    pts.push(1.2 * Math.cos(a), 0.005, 1.2 * Math.sin(a), 8.5 * Math.cos(a), 0.005, 8.5 * Math.sin(a));
+  }
+  var g = new three__WEBPACK_IMPORTED_MODULE_0__.BufferGeometry();
+  g.setAttribute('position', new three__WEBPACK_IMPORTED_MODULE_0__.Float32BufferAttribute(pts, 3));
+  scene.add(new three__WEBPACK_IMPORTED_MODULE_0__.LineSegments(g, new three__WEBPACK_IMPORTED_MODULE_0__.LineBasicMaterial({
+    color: 0x25314a,
+    transparent: true,
+    opacity: 0.8
+  })));
+}
+
+// Vertical column guides on the inside of the ring wall
+{
+  var _pts = [];
+  var r = INNER_R - 0.03;
+  for (var _c = 0; _c < COLS; _c++) {
+    var _a = (_c + 0.5) * THETA;
+    _pts.push(r * Math.cos(_a), 0, r * Math.sin(_a), r * Math.cos(_a), WALL_H, r * Math.sin(_a));
+  }
+  var _g = new three__WEBPACK_IMPORTED_MODULE_0__.BufferGeometry();
+  _g.setAttribute('position', new three__WEBPACK_IMPORTED_MODULE_0__.Float32BufferAttribute(_pts, 3));
+  scene.add(new three__WEBPACK_IMPORTED_MODULE_0__.LineSegments(_g, new three__WEBPACK_IMPORTED_MODULE_0__.LineBasicMaterial({
+    color: 0x3a4a70,
+    transparent: true,
+    opacity: 0.18
+  })));
+}
+
+// Danger line: red ring at the height where things get dicey
+{
+  var _pts2 = [];
+  var _r = INNER_R - 0.03,
+    y = DANGER_ROW * BLOCK_H,
+    n = 96;
+  for (var i = 0; i < n; i++) {
+    var _a2 = i / n * Math.PI * 2,
+      b = (i + 1) / n * Math.PI * 2;
+    _pts2.push(_r * Math.cos(_a2), y, _r * Math.sin(_a2), _r * Math.cos(b), y, _r * Math.sin(b));
+  }
+  var _g2 = new three__WEBPACK_IMPORTED_MODULE_0__.BufferGeometry();
+  _g2.setAttribute('position', new three__WEBPACK_IMPORTED_MODULE_0__.Float32BufferAttribute(_pts2, 3));
+  scene.add(new three__WEBPACK_IMPORTED_MODULE_0__.LineSegments(_g2, new three__WEBPACK_IMPORTED_MODULE_0__.LineBasicMaterial({
+    color: 0xff4433,
+    transparent: true,
+    opacity: 0.35
+  })));
+}
+
+// ---------- Block geometry ----------
+// One flat-faced trapezoidal wedge, built once and shared by every block.
+// Local frame after the rotations below: +Y up, radial outward along +Z.
+function wedgeGeometry() {
+  var t = Math.tan(THETA / 2);
+  var d1 = INNER_R,
+    d2 = INNER_R + DEPTH;
+  var w1 = d1 * t - GAP / 2,
+    w2 = d2 * t - GAP / 2;
+  var s = new three__WEBPACK_IMPORTED_MODULE_0__.Shape();
+  s.moveTo(-w1, d1);
+  s.lineTo(w1, d1);
+  s.lineTo(w2, d2);
+  s.lineTo(-w2, d2);
+  s.closePath();
+  var g = new three__WEBPACK_IMPORTED_MODULE_0__.ExtrudeGeometry(s, {
+    depth: BLOCK_H - GAP,
+    bevelEnabled: false
+  });
+  g.rotateX(-Math.PI / 2); // extrusion -> up, radial -> -Z
+  g.rotateY(Math.PI); // radial -> +Z
+  return g;
+}
+var WEDGE = wedgeGeometry();
+var WEDGE_EDGES = new three__WEBPACK_IMPORTED_MODULE_0__.EdgesGeometry(WEDGE);
+var EDGE_MAT = new three__WEBPACK_IMPORTED_MODULE_0__.LineBasicMaterial({
+  color: 0x000000,
+  transparent: true,
+  opacity: 0.35
+});
+var GHOST_MAT = new three__WEBPACK_IMPORTED_MODULE_0__.MeshBasicMaterial({
+  color: 0xffffff,
+  transparent: true,
+  opacity: 0.08,
+  depthWrite: false
+});
+var GHOST_EDGE_MAT = new three__WEBPACK_IMPORTED_MODULE_0__.LineBasicMaterial({
+  color: 0xffffff,
+  transparent: true,
+  opacity: 0.4
+});
+
+// ---------- Pieces ----------
+// Standard tetrominoes as (dCol, dRow) offsets; dRow is up.
+var PIECES = {
+  I: {
+    color: 0x3ec6d8,
+    cells: [[-1, 0], [0, 0], [1, 0], [2, 0]]
+  },
+  O: {
+    color: 0xf2c94c,
+    cells: [[0, 0], [1, 0], [0, 1], [1, 1]]
+  },
+  T: {
+    color: 0xb37fd4,
+    cells: [[-1, 0], [0, 0], [1, 0], [0, 1]]
+  },
+  S: {
+    color: 0x6fcf7a,
+    cells: [[-1, 0], [0, 0], [0, 1], [1, 1]]
+  },
+  Z: {
+    color: 0xe66a5f,
+    cells: [[1, 0], [0, 0], [0, 1], [-1, 1]]
+  },
+  J: {
+    color: 0x5a8fe0,
+    cells: [[-1, 0], [0, 0], [1, 0], [-1, 1]]
+  },
+  L: {
+    color: 0xe8a04b,
+    cells: [[-1, 0], [0, 0], [1, 0], [1, 1]]
+  }
+};
+var TYPE_NAMES = Object.keys(PIECES);
+var MATS = {};
+for (var _i = 0, _TYPE_NAMES = TYPE_NAMES; _i < _TYPE_NAMES.length; _i++) {
+  var t = _TYPE_NAMES[_i];
+  MATS[t] = new three__WEBPACK_IMPORTED_MODULE_0__.MeshStandardMaterial({
+    color: PIECES[t].color,
+    roughness: 0.4,
+    metalness: 0.05,
+    emissive: PIECES[t].color,
+    emissiveIntensity: 0.14
+  });
+}
+function cellsFor(type, rot) {
+  if (type === 'O') return PIECES.O.cells;
+  return PIECES[type].cells.map(function (_ref) {
+    var _ref2 = _slicedToArray(_ref, 2),
+      x = _ref2[0],
+      y = _ref2[1];
+    for (var _i2 = 0; _i2 < mod(rot, 4); _i2++) {
+      var _ref3 = [y, -x];
+      x = _ref3[0];
+      y = _ref3[1];
+    } // rotate CW
+    return [x, y];
+  });
+}
+function makeBlock(material, edgeMaterial) {
+  var m = new three__WEBPACK_IMPORTED_MODULE_0__.Mesh(WEDGE, material);
+  m.add(new three__WEBPACK_IMPORTED_MODULE_0__.LineSegments(WEDGE_EDGES, edgeMaterial));
+  return m;
+}
+function placeBlock(mesh, col, row) {
+  mesh.rotation.y = Math.PI / 2 - col * THETA; // local +Z -> column direction
+  mesh.position.y = row * BLOCK_H + GAP / 2;
+}
+
+// ---------- Game state ----------
+var grid = Array.from({
+  length: ROWS
+}, function () {
+  return Array(COLS).fill(null);
+});
+var state = 'start'; // 'start' | 'playing' | 'over'
+var score = 0,
+  rings = 0,
+  level = 1;
+var piece = null; // { type, rot, col, row, meshes[4] }
+var nextType = null;
+var bag = [];
+var gravityAcc = 0;
+var ghostMeshes = Array.from({
+  length: 4
+}, function () {
+  var m = makeBlock(GHOST_MAT, GHOST_EDGE_MAT);
+  m.visible = false;
+  scene.add(m);
+  return m;
+});
+function bagNext() {
+  if (bag.length === 0) {
+    bag = [].concat(TYPE_NAMES);
+    for (var _i3 = bag.length - 1; _i3 > 0; _i3--) {
+      var j = Math.floor(Math.random() * (_i3 + 1));
+      var _ref4 = [bag[j], bag[_i3]];
+      bag[_i3] = _ref4[0];
+      bag[j] = _ref4[1];
+    }
+  }
+  return bag.pop();
+}
+var gravityMs = function gravityMs() {
+  return Math.max(120, 850 * Math.pow(0.82, level - 1));
+};
+function canPlace(type, rot, col, row) {
+  var _iterator = _createForOfIteratorHelper(cellsFor(type, rot)),
+    _step;
+  try {
+    for (_iterator.s(); !(_step = _iterator.n()).done;) {
+      var _step$value = _slicedToArray(_step.value, 2),
+        dx = _step$value[0],
+        dy = _step$value[1];
+      var _c2 = mod(col + dx, COLS),
+        _r2 = row + dy;
+      if (_r2 < 0) return false;
+      if (_r2 < ROWS && grid[_r2][_c2]) return false; // cells above the rim are fine
+    }
+  } catch (err) {
+    _iterator.e(err);
+  } finally {
+    _iterator.f();
+  }
+  return true;
+}
+function spawn() {
+  var _nextType;
+  var type = (_nextType = nextType) !== null && _nextType !== void 0 ? _nextType : bagNext();
+  nextType = bagNext();
+  drawNext();
+  piece = {
+    type: type,
+    rot: 0,
+    row: ROWS,
+    col: mod(Math.round(camYaw / THETA), COLS),
+    // spawn where the player is looking
+    meshes: cellsFor(type, 0).map(function () {
+      var m = makeBlock(MATS[type], EDGE_MAT);
+      scene.add(m);
+      return m;
+    })
+  };
+  updatePieceMeshes();
+}
+function ghostRow() {
+  var r = piece.row;
+  while (canPlace(piece.type, piece.rot, piece.col, r - 1)) r--;
+  return r;
+}
+function updatePieceMeshes() {
+  var cells = cellsFor(piece.type, piece.rot);
+  var gRow = ghostRow();
+  cells.forEach(function (_ref5, i) {
+    var _ref6 = _slicedToArray(_ref5, 2),
+      dx = _ref6[0],
+      dy = _ref6[1];
+    var c = mod(piece.col + dx, COLS);
+    placeBlock(piece.meshes[i], c, piece.row + dy);
+    var gr = gRow + dy;
+    ghostMeshes[i].visible = gr < ROWS && gr !== piece.row + dy;
+    placeBlock(ghostMeshes[i], c, gr);
+  });
+}
+function tryMove(dCol, dRow, dRot) {
+  var rot = piece.rot + (dRot || 0);
+  if (!canPlace(piece.type, rot, piece.col + dCol, piece.row + dRow)) return false;
+  piece.col = mod(piece.col + dCol, COLS);
+  piece.row += dRow;
+  piece.rot = mod(rot, 4);
+  updatePieceMeshes();
+  return true;
+}
+function rotatePiece() {
+  if (piece.type === 'O') return;
+  // no walls on a cylinder, so just a few simple kicks
+  for (var _i4 = 0, _arr = [[0, 0], [1, 0], [-1, 0], [0, 1]]; _i4 < _arr.length; _i4++) {
+    var _arr$_i = _slicedToArray(_arr[_i4], 2),
+      kc = _arr$_i[0],
+      kr = _arr$_i[1];
+    if (tryMove(kc, kr, 1)) return;
+  }
+}
+function lockPiece() {
+  var cells = cellsFor(piece.type, piece.rot);
+  // topping out: any cell locked above the rim ends the game
+  if (cells.some(function (_ref7) {
+    var _ref8 = _slicedToArray(_ref7, 2),
+      dy = _ref8[1];
+    return piece.row + dy >= ROWS;
+  })) return gameOver();
+  var touched = new Set();
+  cells.forEach(function (_ref9, i) {
+    var _ref10 = _slicedToArray(_ref9, 2),
+      dx = _ref10[0],
+      dy = _ref10[1];
+    var c = mod(piece.col + dx, COLS),
+      r = piece.row + dy;
+    grid[r][c] = piece.meshes[i];
+    touched.add(r);
+  });
+  piece = null;
+  hideGhost();
+  clearFullRings(_toConsumableArray(touched));
+  if (state === 'playing') spawn();
+}
+function hideGhost() {
+  ghostMeshes.forEach(function (m) {
+    return m.visible = false;
+  });
+}
+
+// ---------- Ring clearing ----------
+var tweens = []; // { mesh, fromY, toY, t0, dur, shrink }
+
+function clearFullRings(candidateRows) {
+  var full = candidateRows.filter(function (r) {
+    return grid[r].every(Boolean);
+  }).sort(function (a, b) {
+    return a - b;
+  });
+  if (full.length === 0) return;
+  var now = performance.now();
+  var _iterator2 = _createForOfIteratorHelper(full),
+    _step2;
+  try {
+    for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
+      var _r3 = _step2.value;
+      var _iterator3 = _createForOfIteratorHelper(grid[_r3]),
+        _step3;
+      try {
+        for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
+          var _mesh = _step3.value;
+          _mesh.material = new three__WEBPACK_IMPORTED_MODULE_0__.MeshBasicMaterial({
+            color: 0xffffff
+          });
+          tweens.push({
+            mesh: _mesh,
+            t0: now,
+            dur: 140,
+            shrink: true
+          });
+        }
+      } catch (err) {
+        _iterator3.e(err);
+      } finally {
+        _iterator3.f();
+      }
+    }
+
+    // compact the grid downward
+  } catch (err) {
+    _iterator2.e(err);
+  } finally {
+    _iterator2.f();
+  }
+  var write = full[0];
+  for (var read = full[0]; read < ROWS; read++) {
+    if (full.includes(read)) continue;
+    if (write !== read) {
+      grid[write] = grid[read];
+      for (var _c3 = 0; _c3 < COLS; _c3++) {
+        var mesh = grid[write][_c3];
+        if (mesh) tweens.push({
+          mesh: mesh,
+          fromY: mesh.position.y,
+          toY: write * BLOCK_H + GAP / 2,
+          t0: now,
+          dur: 140
+        });
+      }
+    }
+    write++;
+  }
+  while (write < ROWS) grid[write++] = Array(COLS).fill(null);
+  rings += full.length;
+  score += [0, 100, 300, 500, 800][full.length] * level;
+  level = 1 + Math.floor(rings / RINGS_PER_LEVEL);
+  updateHud();
+  flash(full.length >= 3 ? 0.5 : 0.25);
+}
+function updateTweens(now) {
+  for (var _i5 = tweens.length - 1; _i5 >= 0; _i5--) {
+    var _t = tweens[_i5];
+    var k = clamp((now - _t.t0) / _t.dur, 0, 1);
+    if (_t.shrink) {
+      _t.mesh.scale.setScalar(1 - k * 0.95);
+      if (k === 1) {
+        scene.remove(_t.mesh);
+        _t.mesh.material.dispose();
+        tweens.splice(_i5, 1);
+      }
+    } else {
+      _t.mesh.position.y = _t.fromY + (_t.toY - _t.fromY) * k;
+      if (k === 1) tweens.splice(_i5, 1);
+    }
+  }
+}
+
+// ---------- Gravity / drops ----------
+function tickDown() {
+  if (!tryMove(0, -1, 0)) lockPiece();
+}
+function softDrop() {
+  if (tryMove(0, -1, 0)) {
+    score += 1;
+    updateHud();
+  }
+}
+function hardDrop() {
+  var target = ghostRow();
+  score += 2 * (piece.row - target);
+  piece.row = target;
+  updatePieceMeshes();
+  updateHud();
+  lockPiece();
+}
+
+// ---------- Camera ----------
+var camYaw = 0,
+  camPitch = 0.1;
+var lastManualLook = -Infinity;
+function updateCamera(dt, now) {
+  if (piece && now - lastManualLook > 1200) {
+    // auto-follow the falling piece
+    var targetYaw = piece.col * THETA;
+    var targetPitch = clamp(Math.atan2((piece.row + 0.5) * BLOCK_H - EYE, INNER_R), -0.5, 0.8);
+    var k = 1 - Math.exp(-4 * dt);
+    camYaw += (mod(targetYaw - camYaw + Math.PI, Math.PI * 2) - Math.PI) * k;
+    camPitch += (targetPitch - camPitch) * k;
+  }
+  camera.lookAt(Math.cos(camYaw) * Math.cos(camPitch), EYE + Math.sin(camPitch), Math.sin(camYaw) * Math.cos(camPitch));
+}
+
+// drag to look (mouse + touch, via pointer events)
+var dragging = false,
+  lastX = 0,
+  lastY = 0;
+renderer.domElement.addEventListener('pointerdown', function (e) {
+  dragging = true;
+  lastX = e.clientX;
+  lastY = e.clientY;
+});
+window.addEventListener('pointerup', function () {
+  return dragging = false;
+});
+window.addEventListener('pointermove', function (e) {
+  if (!dragging) return;
+  camYaw += (e.clientX - lastX) * 0.005;
+  camPitch = clamp(camPitch - (e.clientY - lastY) * 0.005, -0.6, 1.2);
+  lastX = e.clientX;
+  lastY = e.clientY;
+  lastManualLook = performance.now();
+});
+
+// ---------- Danger feedback ----------
+var vignette = document.getElementById('vignette');
+var flashEl = document.getElementById('flash');
+function stackHeight() {
+  for (var _r4 = ROWS - 1; _r4 >= 0; _r4--) if (grid[_r4].some(Boolean)) return _r4 + 1;
+  return 0;
+}
+function updateDanger(now) {
+  var f = clamp((stackHeight() - DANGER_ROW) / (ROWS - DANGER_ROW), 0, 1);
+  vignette.style.opacity = (f * 0.65).toFixed(2);
+  lamp.color.lerpColors(LAMP_WARM, LAMP_RED, f);
+  lamp.intensity = 7 + f * 6 * (0.7 + 0.3 * Math.sin(now * 0.006));
+}
+function flash(opacity) {
+  flashEl.style.transition = 'none';
+  flashEl.style.opacity = opacity;
+  requestAnimationFrame(function () {
+    flashEl.style.transition = 'opacity .3s';
+    flashEl.style.opacity = 0;
+  });
+}
+
+// ---------- HUD ----------
+var hud = {
+  score: document.getElementById('score'),
+  lines: document.getElementById('lines'),
+  level: document.getElementById('level')
+};
+var nextCanvas = document.getElementById('next');
+var nextCtx = nextCanvas.getContext('2d');
+function updateHud() {
+  hud.score.textContent = score;
+  hud.lines.textContent = rings;
+  hud.level.textContent = level;
+}
+function drawNext() {
+  var ctx = nextCtx;
+  ctx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
+  if (!nextType) return;
+  var cells = PIECES[nextType].cells;
+  var xs = cells.map(function (c) {
+      return c[0];
+    }),
+    ys = cells.map(function (c) {
+      return c[1];
+    });
+  var minX = Math.min.apply(Math, _toConsumableArray(xs)),
+    maxX = Math.max.apply(Math, _toConsumableArray(xs));
+  var minY = Math.min.apply(Math, _toConsumableArray(ys)),
+    maxY = Math.max.apply(Math, _toConsumableArray(ys));
+  var size = 16,
+    pad = 2;
+  var ox = (nextCanvas.width - (maxX - minX + 1) * size) / 2;
+  var oy = (nextCanvas.height - (maxY - minY + 1) * size) / 2;
+  ctx.fillStyle = '#' + PIECES[nextType].color.toString(16).padStart(6, '0');
+  var _iterator4 = _createForOfIteratorHelper(cells),
+    _step4;
+  try {
+    for (_iterator4.s(); !(_step4 = _iterator4.n()).done;) {
+      var _step4$value = _slicedToArray(_step4.value, 2),
+        x = _step4$value[0],
+        _y = _step4$value[1];
+      ctx.fillRect(ox + (x - minX) * size + pad, oy + (maxY - _y) * size + pad, size - pad * 2, size - pad * 2);
+    }
+  } catch (err) {
+    _iterator4.e(err);
+  } finally {
+    _iterator4.f();
+  }
+}
+
+// ---------- Game flow ----------
+var overlay = document.getElementById('overlay');
+var finalScore = document.getElementById('final-score');
+var startBtn = document.getElementById('start-btn');
+function startGame() {
+  // clear any previous game
+  for (var _r5 = 0; _r5 < ROWS; _r5++) for (var _c4 = 0; _c4 < COLS; _c4++) {
+    if (grid[_r5][_c4]) {
+      scene.remove(grid[_r5][_c4]);
+      grid[_r5][_c4] = null;
+    }
+  }
+  if (piece) {
+    piece.meshes.forEach(function (m) {
+      return scene.remove(m);
+    });
+    piece = null;
+  }
+  tweens.length = 0;
+  score = 0;
+  rings = 0;
+  level = 1;
+  gravityAcc = 0;
+  bag = [];
+  nextType = null;
+  updateHud();
+  overlay.classList.add('hidden');
+  state = 'playing';
+  spawn();
+}
+function gameOver() {
+  state = 'over';
+  piece = null;
+  hideGhost();
+  finalScore.style.display = 'block';
+  finalScore.textContent = "SCORE ".concat(score, " \u2014 ").concat(rings, " RINGS");
+  startBtn.textContent = 'PLAY AGAIN';
+  overlay.classList.remove('hidden');
+}
+startBtn.addEventListener('click', startGame);
+
+// ---------- Input ----------
+window.addEventListener('keydown', function (e) {
+  if (state === 'start' && (e.code === 'Space' || e.code === 'Enter')) return startGame();
+  if (state === 'over' && (e.code === 'Space' || e.code === 'Enter' || e.code === 'KeyR')) return startGame();
+  if (state !== 'playing' || !piece) return;
+  switch (e.code) {
+    case 'ArrowLeft':
+    case 'KeyA':
+      tryMove(-1, 0, 0);
+      break;
+    case 'ArrowRight':
+    case 'KeyD':
+      tryMove(1, 0, 0);
+      break;
+    case 'ArrowUp':
+    case 'KeyW':
+    case 'KeyX':
+      rotatePiece();
+      break;
+    case 'ArrowDown':
+    case 'KeyS':
+      softDrop();
+      break;
+    case 'Space':
+      e.preventDefault();
+      hardDrop();
+      break;
+    default:
+      return;
+  }
+  e.preventDefault();
+});
+
+// touch pads (also work with mouse)
+var pad = function pad(id, fn) {
+  var el = document.getElementById(id);
+  el.addEventListener('pointerdown', function (e) {
+    e.stopPropagation();
+    if (state === 'playing' && piece) fn();
+  });
+};
+pad('pad-left', function () {
+  return tryMove(-1, 0, 0);
+});
+pad('pad-right', function () {
+  return tryMove(1, 0, 0);
+});
+pad('pad-rot', rotatePiece);
+pad('pad-down', softDrop);
+pad('pad-drop', hardDrop);
+
+// ---------- Main loop ----------
+var lastT = performance.now();
+function frame(now) {
+  requestAnimationFrame(frame);
+  var dt = Math.min(0.05, (now - lastT) / 1000);
+  lastT = now;
+  if (state === 'playing' && piece) {
+    gravityAcc += dt * 1000;
+    var iv = gravityMs();
+    while (gravityAcc > iv && state === 'playing') {
+      gravityAcc -= iv;
+      tickDown();
+    }
+  }
+  updateTweens(now);
+  updateCamera(dt, now);
+  updateDanger(now);
   renderer.render(scene, camera);
 }
-animate();
+requestAnimationFrame(frame);
+
+// debug hook for automated testing
+window.__game = {
+  get state() {
+    return state;
+  },
+  get score() {
+    return score;
+  },
+  get rings() {
+    return rings;
+  },
+  get piece() {
+    return piece && {
+      type: piece.type,
+      col: piece.col,
+      row: piece.row,
+      rot: piece.rot
+    };
+  },
+  stackHeight: stackHeight,
+  startGame: startGame,
+  // fill a ring except skipCol, for testing clears from the console
+  fillRing: function fillRing(row) {
+    var skipCol = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : -1;
+    for (var _c5 = 0; _c5 < COLS; _c5++) {
+      if (_c5 === skipCol || grid[row][_c5]) continue;
+      var m = makeBlock(MATS.J, EDGE_MAT);
+      placeBlock(m, _c5, row);
+      scene.add(m);
+      grid[row][_c5] = m;
+    }
+  }
+};
+})();
+
 /******/ })()
 ;
 //# sourceMappingURL=bundle.js.map

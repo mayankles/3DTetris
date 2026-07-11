@@ -5,6 +5,13 @@ module.exports = {
     output: {
         filename: 'bundle.js',
         path: path.resolve(__dirname, 'dist'),
+        publicPath: '/dist/',
+    },
+    devServer: {
+        static: {
+            directory: __dirname,
+        },
+        port: 9000,
     },
     module: {
         rules: [
@@ -19,12 +26,6 @@ module.exports = {
                 },
             },
         ],
-    },
-    resolve: {
-        alias: {
-            'three': path.resolve('./node_modules/three'),
-            'OrbitControls': path.resolve('./node_modules/three/examples/jsm/controls/OrbitControls.js'),
-        },
     },
     devtool: 'source-map',
     mode: 'development',
