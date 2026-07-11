@@ -47,10 +47,11 @@
         #piece-arrow.low { color: #ff5040; }
 
         #look-hint {
-            position: fixed; bottom: 84px; left: 50%; transform: translateX(-50%);
+            position: fixed; bottom: max(24px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%);
             font-size: 10px; letter-spacing: 2px; color: #55648a;
             pointer-events: none; user-select: none; white-space: nowrap;
             text-shadow: 0 1px 3px rgba(0,0,0,.8);
+            transition: opacity 1s;
         }
 
         #overlay {
@@ -78,21 +79,22 @@
         #overlay button:hover { background: #fff; }
         #final-score { display: none; font-size: 20px; margin-bottom: 18px; }
 
-        #pads {
-            position: fixed; bottom: max(14px, env(safe-area-inset-bottom)); left: 50%;
-            transform: translateX(-50%);
-            display: flex; gap: 10px; z-index: 5;
+        .pads {
+            position: fixed; bottom: max(22px, env(safe-area-inset-bottom));
+            display: flex; flex-direction: column; gap: 14px; z-index: 5;
         }
-        #pads button {
-            width: 54px; height: 54px; border-radius: 50%;
+        #pads-left { left: max(16px, env(safe-area-inset-left)); }
+        #pads-right { right: max(16px, env(safe-area-inset-right)); }
+        .pads button {
+            width: 64px; height: 64px; border-radius: 50%;
             border: 1px solid #38466b; background: rgba(16, 21, 33, .55);
-            color: #dfe7f5; font-size: 20px; cursor: pointer;
+            color: #dfe7f5; font-size: 24px; cursor: pointer;
             touch-action: manipulation; user-select: none; -webkit-user-select: none;
         }
-        #pads button:active { background: rgba(60, 75, 115, .8); }
+        .pads button:active { background: rgba(60, 75, 115, .8); }
         @media (hover: hover) and (pointer: fine) {
-            #pads { opacity: .35; }
-            #pads:hover { opacity: 1; }
+            .pads { opacity: .3; }
+            .pads:hover { opacity: 1; }
         }
     </style>
 </head>
@@ -111,11 +113,12 @@
     <div id="piece-arrow">&#10148;</div>
     <div id="look-hint"></div>
 
-    <div id="pads">
-        <button id="pad-left" aria-label="Move left">&#9664;</button>
-        <button id="pad-rot" aria-label="Rotate">&#10227;</button>
-        <button id="pad-down" aria-label="Soft drop">&#9660;</button>
+    <div class="pads" id="pads-left">
         <button id="pad-drop" aria-label="Hard drop">&#11123;</button>
+        <button id="pad-left" aria-label="Move left">&#9664;</button>
+    </div>
+    <div class="pads" id="pads-right">
+        <button id="pad-rot" aria-label="Rotate">&#10227;</button>
         <button id="pad-right" aria-label="Move right">&#9654;</button>
     </div>
 

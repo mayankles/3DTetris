@@ -54480,6 +54480,9 @@ var mod = function mod(n, m) {
 var clamp = function clamp(v, a, b) {
   return Math.max(a, Math.min(b, v));
 };
+var wrapAngle = function wrapAngle(a) {
+  return mod(a + Math.PI, Math.PI * 2) - Math.PI;
+};
 
 // ---------- Scene / renderer ----------
 var scene = new three__WEBPACK_IMPORTED_MODULE_0__.Scene();
@@ -54487,6 +54490,19 @@ scene.background = new three__WEBPACK_IMPORTED_MODULE_0__.Color(0x0a0d14);
 scene.fog = new three__WEBPACK_IMPORTED_MODULE_0__.Fog(0x0a0d14, 7, 16);
 var camera = new three__WEBPACK_IMPORTED_MODULE_0__.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
 camera.position.set(0, EYE, 0);
+
+// Hold the *horizontal* FOV steady and derive vertical from the aspect ratio:
+// wide desktop windows stop fisheyeing at the edges, and portrait phones stop
+// tunnel-visioning down to a single column.
+function updateProjection() {
+  var aspect = window.innerWidth / window.innerHeight;
+  var hFov = 80 * (Math.PI / 180);
+  var vFov = clamp(2 * Math.atan(Math.tan(hFov / 2) / aspect), 55 * (Math.PI / 180), 100 * (Math.PI / 180));
+  camera.fov = vFov * (180 / Math.PI);
+  camera.aspect = aspect;
+  camera.updateProjectionMatrix();
+}
+updateProjection();
 var renderer = new three__WEBPACK_IMPORTED_MODULE_0__.WebGLRenderer({
   antialias: true
 });
@@ -54496,8 +54512,7 @@ renderer.toneMapping = three__WEBPACK_IMPORTED_MODULE_0__.ACESFilmicToneMapping;
 renderer.domElement.classList.add('game');
 document.body.appendChild(renderer.domElement);
 window.addEventListener('resize', function () {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
+  updateProjection();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
@@ -54955,15 +54970,27 @@ function piecePitch() {
 }
 function updateCamera(dt, now) {
   if (gyro.active) {
-    // phone orientation drives the camera directly; the pitch assist from
-    // a recenter fades back to the phone's natural pitch over a few seconds
-    gyro.pitchOffset *= Math.exp(-dt / 5);
+    // The world's rotation offset drifts so the falling piece migrates toward
+    // the player's forward direction — gently during play (no need to spin a
+    // full 360° physically), fast for ~0.6s after a double-tap recenter.
+    if (piece) {
+      var desired = gyro.yaw - pieceYaw(); // offset that would center the piece
+      var err = wrapAngle(desired - gyro.yawOffsetTarget);
+      var rate = now < recenterBoostUntil ? 6 : DRIFT_RATE;
+      gyro.yawOffsetTarget += clamp(err, -rate * dt, rate * dt);
+    }
+    // pitch assist from a recenter fades back to the phone's natural tilt
+    gyro.pitchOffsetTarget *= Math.exp(-dt / 5);
+    // offsets chase their targets with an ease-out, so recenters sweep, not cut
+    var ease = 1 - Math.exp(-8 * dt);
+    gyro.yawOffset += wrapAngle(gyro.yawOffsetTarget - gyro.yawOffset) * ease;
+    gyro.pitchOffset += (gyro.pitchOffsetTarget - gyro.pitchOffset) * ease;
     camYaw = gyro.yaw - gyro.yawOffset;
     camPitch = clamp(gyro.pitch - gyro.pitchOffset, -0.9, 1.3);
   } else if (!pointerLocked && piece && now - lastManualLook > 1200) {
     // classic mode: auto-follow the falling piece
     var k = 1 - Math.exp(-4 * dt);
-    camYaw += (mod(pieceYaw() - camYaw + Math.PI, Math.PI * 2) - Math.PI) * k;
+    camYaw += wrapAngle(pieceYaw() - camYaw) * k;
     camPitch += (piecePitch() - camPitch) * k;
   }
   camera.lookAt(Math.cos(camYaw) * Math.cos(camPitch), EYE + Math.sin(camPitch), Math.sin(camYaw) * Math.cos(camPitch));
@@ -54971,14 +54998,15 @@ function updateCamera(dt, now) {
 function recenter() {
   if (!piece) return;
   if (gyro.active) {
-    // re-map the current phone orientation to point at the piece
-    gyro.yawOffset = gyro.yaw - pieceYaw();
-    gyro.pitchOffset = gyro.pitch - piecePitch();
-  } else {
-    camYaw = pieceYaw();
+    // boost the drift so the world sweeps around to the piece
+    recenterBoostUntil = performance.now() + 600;
+    gyro.pitchOffsetTarget = gyro.pitch - piecePitch();
+  } else if (pointerLocked) {
+    camYaw = pieceYaw(); // FPS-style instant snap
     camPitch = piecePitch();
+  } else {
+    lastManualLook = -Infinity; // let auto-follow sweep back to the piece
   }
-  lastManualLook = -Infinity; // let auto-follow take over again in drag mode
 }
 
 // ---------- Look controls: pointer lock (desktop) ----------
@@ -55046,8 +55074,12 @@ var gyro = {
   yaw: 0,
   pitch: 0,
   yawOffset: 0,
-  pitchOffset: 0
+  yawOffsetTarget: 0,
+  pitchOffset: 0,
+  pitchOffsetTarget: 0
 };
+var DRIFT_RATE = 0.25; // rad/s of always-on assist toward the piece
+var recenterBoostUntil = 0;
 var isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 var _euler = new three__WEBPACK_IMPORTED_MODULE_0__.Euler();
 var _q = new three__WEBPACK_IMPORTED_MODULE_0__.Quaternion();
@@ -55065,7 +55097,7 @@ function onDeviceOrientation(e) {
   gyro.yaw = Math.atan2(_dir.z, _dir.x);
   gyro.pitch = Math.asin(clamp(_dir.y, -1, 1));
   if (!gyro.calibrated) {
-    gyro.yawOffset = gyro.yaw - camYaw; // current phone heading = current view
+    gyro.yawOffset = gyro.yawOffsetTarget = gyro.yaw - camYaw; // current phone heading = current view
     gyro.calibrated = true;
   }
   if (!gyro.active) {
@@ -55130,8 +55162,15 @@ function updateArrow(now) {
 
 // ---------- Look-mode hint ----------
 var lookHint = document.getElementById('look-hint');
+var hintTimer = null;
 function updateLookHint() {
   if (gyro.active) lookHint.textContent = 'MOVE PHONE TO LOOK · DOUBLE-TAP TO FACE PIECE';else if (pointerLocked) lookHint.textContent = 'ESC TO RELEASE MOUSE · F TO FACE PIECE';else if (isTouchDevice) lookHint.textContent = 'DRAG TO LOOK · DOUBLE-TAP TO FACE PIECE';else lookHint.textContent = 'CLICK TO ENGAGE MOUSE-LOOK · F TO FACE PIECE';
+  // show on every mode change, then fade so it doesn't clutter gameplay
+  lookHint.style.opacity = 1;
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(function () {
+    lookHint.style.opacity = 0;
+  }, 6000);
 }
 updateLookHint();
 
@@ -55288,23 +55327,41 @@ window.addEventListener('keydown', function (e) {
   e.preventDefault();
 });
 
-// touch pads (also work with mouse)
-var pad = function pad(id, fn) {
+// touch pads (also work with mouse); move buttons auto-repeat while held
+function bindPad(id, fn) {
+  var repeat = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
   var el = document.getElementById(id);
+  var delay = null,
+    iv = null;
+  var stop = function stop() {
+    clearTimeout(delay);
+    clearInterval(iv);
+    delay = iv = null;
+  };
   el.addEventListener('pointerdown', function (e) {
     e.stopPropagation();
-    if (state === 'playing' && piece) fn();
+    if (state !== 'playing' || !piece) return;
+    fn();
+    if (repeat) {
+      delay = setTimeout(function () {
+        iv = setInterval(function () {
+          if (state === 'playing' && piece) fn();
+        }, 100);
+      }, 300);
+    }
   });
-};
-pad('pad-left', function () {
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (t) {
+    return el.addEventListener(t, stop);
+  });
+}
+bindPad('pad-left', function () {
   return tryMove(-1, 0, 0);
-});
-pad('pad-right', function () {
+}, true);
+bindPad('pad-right', function () {
   return tryMove(1, 0, 0);
-});
-pad('pad-rot', rotatePiece);
-pad('pad-down', softDrop);
-pad('pad-drop', hardDrop);
+}, true);
+bindPad('pad-rot', rotatePiece);
+bindPad('pad-drop', hardDrop);
 
 // ---------- Main loop ----------
 var lastT = performance.now();
