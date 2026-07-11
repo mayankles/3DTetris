@@ -54436,6 +54436,12 @@ let __webpack_exports__ = {};
   \*********************/
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var three__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! three */ "./node_modules/three/build/three.module.js");
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
+function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
 function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
 function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
 function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
@@ -54949,9 +54955,11 @@ function piecePitch() {
 }
 function updateCamera(dt, now) {
   if (gyro.active) {
-    // phone orientation drives the camera directly
+    // phone orientation drives the camera directly; the pitch assist from
+    // a recenter fades back to the phone's natural pitch over a few seconds
+    gyro.pitchOffset *= Math.exp(-dt / 5);
     camYaw = gyro.yaw - gyro.yawOffset;
-    camPitch = clamp(gyro.pitch, -0.9, 1.3);
+    camPitch = clamp(gyro.pitch - gyro.pitchOffset, -0.9, 1.3);
   } else if (!pointerLocked && piece && now - lastManualLook > 1200) {
     // classic mode: auto-follow the falling piece
     var k = 1 - Math.exp(-4 * dt);
@@ -54963,7 +54971,9 @@ function updateCamera(dt, now) {
 function recenter() {
   if (!piece) return;
   if (gyro.active) {
-    gyro.yawOffset = gyro.yaw - pieceYaw(); // re-map current phone heading to the piece
+    // re-map the current phone orientation to point at the piece
+    gyro.yawOffset = gyro.yaw - pieceYaw();
+    gyro.pitchOffset = gyro.pitch - piecePitch();
   } else {
     camYaw = pieceYaw();
     camPitch = piecePitch();
@@ -55007,8 +55017,10 @@ renderer.domElement.addEventListener('pointerdown', function (e) {
   lastY = e.clientY;
   if (e.pointerType === 'touch') {
     var now = performance.now();
-    if (now - lastTap < 350) recenter();
-    lastTap = now;
+    if (now - lastTap < 400) {
+      recenter();
+      lastTap = 0;
+    } else lastTap = now;
   }
 });
 window.addEventListener('pointerup', function () {
@@ -55033,7 +55045,8 @@ var gyro = {
   calibrated: false,
   yaw: 0,
   pitch: 0,
-  yawOffset: 0
+  yawOffset: 0,
+  pitchOffset: 0
 };
 var isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 var _euler = new three__WEBPACK_IMPORTED_MODULE_0__.Euler();
@@ -55082,11 +55095,15 @@ function requestGyro() {
 // ---------- Off-screen piece indicator ----------
 var arrowEl = document.getElementById('piece-arrow');
 var _pv = new three__WEBPACK_IMPORTED_MODULE_0__.Vector3();
-function updateArrow() {
-  if (!piece || state !== 'playing') {
-    arrowEl.style.opacity = 0;
-    return;
-  }
+var arrowShown = false,
+  offscreenSince = 0;
+function hideArrow() {
+  arrowShown = false;
+  offscreenSince = 0;
+  arrowEl.style.opacity = 0;
+}
+function updateArrow(now) {
+  if (!piece || state !== 'playing') return hideArrow();
   var a = pieceYaw();
   _pv.set(Math.cos(a) * INNER_R, (piece.row + 0.5) * BLOCK_H, Math.sin(a) * INNER_R).project(camera);
   var behind = _pv.z > 1;
@@ -55096,17 +55113,19 @@ function updateArrow() {
     x = -x;
     y = -y;
   }
-  if (!behind && Math.abs(x) < 0.92 && Math.abs(y) < 0.92) {
-    arrowEl.style.opacity = 0;
-    return;
-  }
+  // hysteresis: only turn on when clearly off-screen, off when clearly back in
+  var lim = arrowShown ? 0.92 : 1.05;
+  if (!behind && Math.abs(x) < lim && Math.abs(y) < lim) return hideArrow();
+  if (!offscreenSince) offscreenSince = now;
+  if (!arrowShown && now - offscreenSince < 350) return; // grace period after spawn/turns
+  arrowShown = true;
   var m = 0.88 / Math.max(Math.abs(x), Math.abs(y));
   var px = (x * m + 1) / 2 * window.innerWidth;
   var py = (1 - y * m) / 2 * window.innerHeight;
   var ang = Math.atan2(-y, x); // CSS y points down
   arrowEl.style.transform = "translate(".concat(px.toFixed(1), "px, ").concat(py.toFixed(1), "px) translate(-50%,-50%) rotate(").concat(ang.toFixed(3), "rad)");
   arrowEl.classList.toggle('low', piece.row <= 3);
-  arrowEl.style.opacity = 0.9;
+  arrowEl.style.opacity = 0.7;
 }
 
 // ---------- Look-mode hint ----------
@@ -55304,7 +55323,7 @@ function frame(now) {
   updateTweens(now);
   updateCamera(dt, now);
   updateDanger(now);
-  updateArrow();
+  updateArrow(now);
   renderer.render(scene, camera);
 }
 requestAnimationFrame(frame);
@@ -55339,6 +55358,9 @@ window.__game = {
       locked: pointerLocked,
       gyro: gyro.active
     };
+  },
+  get gyroState() {
+    return _objectSpread({}, gyro);
   },
   set yaw(v) {
     camYaw = v;

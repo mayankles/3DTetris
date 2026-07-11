@@ -366,9 +366,11 @@ function piecePitch() {
 
 function updateCamera(dt, now) {
     if (gyro.active) {
-        // phone orientation drives the camera directly
+        // phone orientation drives the camera directly; the pitch assist from
+        // a recenter fades back to the phone's natural pitch over a few seconds
+        gyro.pitchOffset *= Math.exp(-dt / 5);
         camYaw = gyro.yaw - gyro.yawOffset;
-        camPitch = clamp(gyro.pitch, -0.9, 1.3);
+        camPitch = clamp(gyro.pitch - gyro.pitchOffset, -0.9, 1.3);
     } else if (!pointerLocked && piece && now - lastManualLook > 1200) {
         // classic mode: auto-follow the falling piece
         const k = 1 - Math.exp(-4 * dt);
@@ -385,7 +387,9 @@ function updateCamera(dt, now) {
 function recenter() {
     if (!piece) return;
     if (gyro.active) {
-        gyro.yawOffset = gyro.yaw - pieceYaw(); // re-map current phone heading to the piece
+        // re-map the current phone orientation to point at the piece
+        gyro.yawOffset = gyro.yaw - pieceYaw();
+        gyro.pitchOffset = gyro.pitch - piecePitch();
     } else {
         camYaw = pieceYaw();
         camPitch = piecePitch();
@@ -423,8 +427,8 @@ renderer.domElement.addEventListener('pointerdown', e => {
     lastX = e.clientX; lastY = e.clientY;
     if (e.pointerType === 'touch') {
         const now = performance.now();
-        if (now - lastTap < 350) recenter();
-        lastTap = now;
+        if (now - lastTap < 400) { recenter(); lastTap = 0; }
+        else lastTap = now;
     }
 });
 window.addEventListener('pointerup', () => (dragging = false));
@@ -439,7 +443,7 @@ window.addEventListener('pointermove', e => {
 });
 
 // ---------- Look controls: device orientation (mobile) ----------
-const gyro = { active: false, listening: false, calibrated: false, yaw: 0, pitch: 0, yawOffset: 0 };
+const gyro = { active: false, listening: false, calibrated: false, yaw: 0, pitch: 0, yawOffset: 0, pitchOffset: 0 };
 const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
 const _euler = new THREE.Euler();
@@ -490,22 +494,34 @@ function requestGyro() {
 // ---------- Off-screen piece indicator ----------
 const arrowEl = document.getElementById('piece-arrow');
 const _pv = new THREE.Vector3();
+let arrowShown = false, offscreenSince = 0;
 
-function updateArrow() {
-    if (!piece || state !== 'playing') { arrowEl.style.opacity = 0; return; }
+function hideArrow() {
+    arrowShown = false;
+    offscreenSince = 0;
+    arrowEl.style.opacity = 0;
+}
+
+function updateArrow(now) {
+    if (!piece || state !== 'playing') return hideArrow();
     const a = pieceYaw();
     _pv.set(Math.cos(a) * INNER_R, (piece.row + 0.5) * BLOCK_H, Math.sin(a) * INNER_R).project(camera);
     const behind = _pv.z > 1;
     let x = _pv.x, y = _pv.y;
     if (behind) { x = -x; y = -y; }
-    if (!behind && Math.abs(x) < 0.92 && Math.abs(y) < 0.92) { arrowEl.style.opacity = 0; return; }
+    // hysteresis: only turn on when clearly off-screen, off when clearly back in
+    const lim = arrowShown ? 0.92 : 1.05;
+    if (!behind && Math.abs(x) < lim && Math.abs(y) < lim) return hideArrow();
+    if (!offscreenSince) offscreenSince = now;
+    if (!arrowShown && now - offscreenSince < 350) return; // grace period after spawn/turns
+    arrowShown = true;
     const m = 0.88 / Math.max(Math.abs(x), Math.abs(y));
     const px = ((x * m + 1) / 2) * window.innerWidth;
     const py = ((1 - y * m) / 2) * window.innerHeight;
     const ang = Math.atan2(-y, x); // CSS y points down
     arrowEl.style.transform = `translate(${px.toFixed(1)}px, ${py.toFixed(1)}px) translate(-50%,-50%) rotate(${ang.toFixed(3)}rad)`;
     arrowEl.classList.toggle('low', piece.row <= 3);
-    arrowEl.style.opacity = 0.9;
+    arrowEl.style.opacity = 0.7;
 }
 
 // ---------- Look-mode hint ----------
@@ -661,7 +677,7 @@ function frame(now) {
     updateTweens(now);
     updateCamera(dt, now);
     updateDanger(now);
-    updateArrow();
+    updateArrow(now);
     renderer.render(scene, camera);
 }
 requestAnimationFrame(frame);
@@ -677,6 +693,7 @@ window.__game = {
     recenter,
     startGyro,
     get look() { return { yaw: camYaw, pitch: camPitch, locked: pointerLocked, gyro: gyro.active }; },
+    get gyroState() { return { ...gyro }; },
     set yaw(v) { camYaw = v; lastManualLook = performance.now(); },
     // fill a ring except skipCol, for testing clears from the console
     fillRing(row, skipCol = -1) {
