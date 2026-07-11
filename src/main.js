@@ -35,17 +35,27 @@ camera.position.set(0, EYE, 0);
 // Hold the *horizontal* FOV steady and derive vertical from the aspect ratio:
 // wide desktop windows stop fisheyeing at the edges, and portrait phones stop
 // tunnel-visioning down to a single column.
+let pullback = 0; // how far behind center the camera sits (see below)
+
 function updateProjection() {
     const aspect = window.innerWidth / window.innerHeight;
-    const hFov = 80 * (Math.PI / 180);
+    const hFovTarget = 80 * (Math.PI / 180);
     const vFov = clamp(
-        2 * Math.atan(Math.tan(hFov / 2) / aspect),
+        2 * Math.atan(Math.tan(hFovTarget / 2) / aspect),
         55 * (Math.PI / 180),
-        100 * (Math.PI / 180)
+        105 * (Math.PI / 180)
     );
     camera.fov = vFov * (180 / Math.PI);
     camera.aspect = aspect;
     camera.updateProjectionMatrix();
+
+    // From the exact center every column spans 30° regardless of FOV, so to fit
+    // ~4 columns (a whole I piece) the camera steps back from the center, away
+    // from wherever it's looking. Solve the pullback for 4 columns in the actual
+    // horizontal FOV; the ring interior is always empty, so clamp inside it.
+    const hFov = 2 * Math.atan(Math.tan(vFov / 2) * aspect);
+    const chordHalf = INNER_R * Math.sin(THETA / 2);
+    pullback = clamp(chordHalf / Math.tan(hFov / 8) - INNER_R, 0, INNER_R - 0.3);
 }
 updateProjection();
 
@@ -378,7 +388,7 @@ let lastManualLook = -Infinity;
 
 function pieceYaw() { return piece.col * THETA; }
 function piecePitch() {
-    return clamp(Math.atan2((piece.row + 0.5) * BLOCK_H - EYE, INNER_R), -0.5, 0.8);
+    return clamp(Math.atan2((piece.row + 0.5) * BLOCK_H - EYE, INNER_R + pullback), -0.5, 0.8);
 }
 
 function updateCamera(dt, now) {
@@ -406,10 +416,15 @@ function updateCamera(dt, now) {
         camYaw += wrapAngle(pieceYaw() - camYaw) * k;
         camPitch += (piecePitch() - camPitch) * k;
     }
+    // camera rig: step back from center, opposite the view direction, so more
+    // of the facing wall fits in frame without widening the FOV
+    const cx = -Math.cos(camYaw) * pullback;
+    const cz = -Math.sin(camYaw) * pullback;
+    camera.position.set(cx, EYE, cz);
     camera.lookAt(
-        Math.cos(camYaw) * Math.cos(camPitch),
+        cx + Math.cos(camYaw) * Math.cos(camPitch),
         EYE + Math.sin(camPitch),
-        Math.sin(camYaw) * Math.cos(camPitch)
+        cz + Math.sin(camYaw) * Math.cos(camPitch)
     );
 }
 
